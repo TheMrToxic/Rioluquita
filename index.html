@@ -1,0 +1,2339 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#3A5A40">
+    
+    <link rel="apple-touch-icon" href="icon.png">
+    <link rel="icon" type="image/png" href="icon.png">
+
+    <title>Rioluquitas</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <!-- INYECCIÓN DE VARIABLES MAESTRAS DE COLOR -->
+    <style>
+        :root {
+            /* Valores por defecto (Tema Clásico) en formato RGB para Tailwind */
+            --c-bg-light: 242 242 247;
+            --c-bg-dark: 0 0 0;
+            --c-card-light: 255 255 255;
+            --c-card-dark: 28 28 30;
+            --c-green-light: 163 177 138;
+            --c-green: 58 90 64;
+            --c-green-dark: 52 78 65;
+            --c-cafe-light: 212 163 115;
+            --c-cafe: 88 47 14;
+            --c-cafe-dark: 62 39 35;
+        }
+    </style>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        iosBg: { light: 'rgb(var(--c-bg-light) / <alpha-value>)', dark: 'rgb(var(--c-bg-dark) / <alpha-value>)' },
+                        iosCard: { light: 'rgb(var(--c-card-light) / <alpha-value>)', dark: 'rgb(var(--c-card-dark) / <alpha-value>)' },
+                        themeGreen: {
+                            light: 'rgb(var(--c-green-light) / <alpha-value>)',
+                            DEFAULT: 'rgb(var(--c-green) / <alpha-value>)',
+                            dark: 'rgb(var(--c-green-dark) / <alpha-value>)'
+                        },
+                        themeCafe: {
+                            light: 'rgb(var(--c-cafe-light) / <alpha-value>)',
+                            DEFAULT: 'rgb(var(--c-cafe) / <alpha-value>)',
+                            dark: 'rgb(var(--c-cafe-dark) / <alpha-value>)'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root {
+            --sat: env(safe-area-inset-top);
+            --sab: env(safe-area-inset-bottom);
+        }
+
+        html {
+            touch-action: manipulation;
+            -webkit-text-size-adjust: 100%;
+        }
+
+        body { 
+            -webkit-tap-highlight-color: transparent; 
+            overscroll-behavior-y: none; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            overflow: hidden;
+            background-color: rgb(var(--c-bg-light));
+            transition: background-color 0.3s ease;
+        }
+        .dark body { background-color: rgb(var(--c-bg-dark)); }
+
+        .app-container { 
+            height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            overflow: hidden; 
+            position: relative; 
+        }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .glass-header { 
+            background: rgb(var(--c-bg-light) / 0.85); 
+            backdrop-filter: blur(20px); 
+            -webkit-backdrop-filter: blur(20px); 
+            border-bottom: 0.5px solid rgba(0, 0, 0, 0.1);
+            padding-top: var(--sat, 20px);
+            height: calc(var(--sat, 20px) + 54px);
+            transform: translateZ(0); 
+            backface-visibility: hidden;
+            transition: background-color 0.3s ease;
+        }
+        .dark .glass-header { background: rgb(var(--c-bg-dark) / 0.75); border-bottom: 0.5px solid rgba(255, 255, 255, 0.1); }
+        
+        .glass-nav { 
+            background: rgb(var(--c-card-light) / 0.85); 
+            backdrop-filter: blur(20px); 
+            -webkit-backdrop-filter: blur(20px); 
+            border-top: 0.5px solid rgba(0, 0, 0, 0.1);
+            padding-bottom: var(--sab, 20px);
+            height: calc(60px + var(--sab, 20px));
+            transform: translateZ(0);
+            backface-visibility: hidden;
+            transition: background-color 0.3s ease;
+        }
+        .dark .glass-nav { background: rgb(var(--c-card-dark) / 0.85); border-top: 0.5px solid rgba(255, 255, 255, 0.1); }
+        
+        .modal-sheet { 
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            transform: translateY(100%); 
+            transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1), background-color 0.3s ease;
+            will-change: transform;
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            background-color: rgb(var(--c-card-light));
+            border-top-left-radius: 32px;
+            border-top-right-radius: 32px;
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.2);
+            touch-action: none;
+            backface-visibility: hidden;
+        }
+        .dark .modal-sheet { background-color: rgb(var(--c-card-dark)); }
+        
+        #modal-add, #modal-datepicker, #modal-abono, #modal-custom-cats, #modal-api-key, #modal-theme, #modal-analytics { height: 92%; }
+        .modal-active { transform: translateY(0) !important; }
+        
+        .modal-handle-container {
+            width: 100%;
+            padding: 12px 0 12px 0;
+            display: flex;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .modal-handle {
+            width: 36px;
+            height: 5px;
+            background-color: rgba(0,0,0,0.1);
+            border-radius: 10px;
+        }
+        .dark .modal-handle { background-color: rgba(255,255,255,0.15); }
+
+        .ios-input-full { 
+            width: 100%; 
+            background-color: rgba(118, 118, 128, 0.12); 
+            border-radius: 14px; 
+            padding: 14px 18px; 
+            display: flex;
+            align-items: center;
+        }
+        .dark .ios-input-full { background-color: rgba(255, 255, 255, 0.08); }
+
+        .ios-input { 
+            width: 100%; 
+            background: transparent; 
+            font-size: 16px; 
+            border: none; 
+            outline: none; 
+            color: inherit; 
+            font-weight: 700;
+        }
+        
+        .day-btn { 
+            aspect-ratio: 1; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            border-radius: 12px; 
+            font-size: 15px; 
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .day-btn.selected { background-color: rgb(var(--c-green)) !important; color: white !important; }
+
+        .flip-card {
+            position: relative;
+            width: 100%;
+            height: 180px;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+            will-change: transform;
+        }
+        .flip-card.is-flipped { transform: rotateY(180deg); }
+        .flip-card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 32px;
+            padding: 1.5rem;
+            color: white;
+            transform: translateZ(0); 
+        }
+        .flip-card-front { background-color: rgb(var(--c-green)); transition: background-color 0.3s ease; }
+        .flip-card-back { background-color: rgb(var(--c-cafe)); transition: background-color 0.3s ease; transform: rotateY(180deg); }
+
+        @media (min-width: 640px) {
+            body { display: flex; align-items: center; justify-content: center; background-color: #E5E7EB; }
+            .dark body { background-color: #111827; }
+            .app-container {
+                width: 393px !important; height: 852px !important; max-height: 95vh;             
+                border-radius: 50px; border: 12px solid #000; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); 
+            }
+            .modal-sheet, #overlay, #toast, #modal-ai-loading, #btn-scroll-top { position: absolute !important; }
+        }
+
+        .fade-enter { animation: tabFadeSlide 0.2s cubic-bezier(0.32, 0.72, 0, 1) forwards; }
+        @keyframes tabFadeSlide {
+            0% { opacity: 0; transform: translateX(8px) translateZ(0); }
+            100% { opacity: 1; transform: translateX(0) translateZ(0); }
+        }
+
+        .bounce-check {
+            animation: bounceCheck 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            background-color: rgb(var(--c-green)) !important; color: white !important; border-color: rgb(var(--c-green)) !important;
+        }
+        @keyframes bounceCheck {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+            100% { transform: scale(1); }
+        }
+
+        #overlay {
+            will-change: opacity;
+            transform: translateZ(0);
+        }
+        
+        .record-item {
+            will-change: transform;
+            transform: translateZ(0);
+        }
+
+        /* Utilidad para barras de progreso del dashboard */
+        .progress-bar-fill {
+            transition: width 1s cubic-bezier(0.32, 0.72, 0, 1);
+        }
+    </style>
+</head>
+<body class="text-gray-900 dark:text-white antialiased transition-colors duration-300">
+
+    <div class="app-container w-full max-w-md mx-auto shadow-2xl relative">
+        
+        <!-- HEADER -->
+        <header class="glass-header absolute top-0 left-0 right-0 z-30 px-4 flex justify-between items-end pb-3">
+            <div class="flex items-center gap-2">
+                <button onclick="openSettings()" class="w-8 h-8 flex items-center justify-center rounded-full bg-gray-400/10 dark:bg-white/5 active:scale-90 transition-all">
+                    <i class="ph ph-gear-six text-lg opacity-40"></i>
+                </button>
+                <h1 class="text-lg font-bold tracking-tight text-themeGreen-dark dark:text-themeGreen-light ml-1">Rioluquitas</h1>
+            </div>
+            <button onclick="openGlobalMonthSelector()" class="flex items-center gap-2 bg-gray-200/60 dark:bg-white/10 px-3 py-1.5 rounded-full active:scale-95 transition-transform">
+                <i class="ph-fill ph-calendar-blank text-themeGreen text-sm"></i>
+                <span id="header-month" class="text-[10px] font-black uppercase tracking-widest leading-none">MAYO 2026</span>
+                <i class="ph ph-caret-down text-[10px] text-gray-400"></i>
+            </button>
+        </header>
+
+        <!-- CONTENIDO PRINCIPAL -->
+        <main id="main-content" class="flex-1 overflow-y-auto no-scrollbar px-4 transition-all duration-300 relative" style="padding-top: calc(var(--sat, 47px) + 75px); padding-bottom: 100px;">
+        </main>
+
+        <!-- BOTÓN FLOTANTE PARA SUBIR -->
+        <button id="btn-scroll-top" onclick="scrollToTop()" class="fixed bottom-24 right-6 w-12 h-12 bg-gray-900 dark:bg-white text-white dark:text-black rounded-full shadow-2xl flex items-center justify-center opacity-0 pointer-events-none translate-y-4 transition-all duration-300 z-20 active:scale-90 border border-white/10 dark:border-black/10">
+            <i class="ph-bold ph-caret-up text-2xl"></i>
+        </button>
+
+        <!-- NAVBAR -->
+        <nav class="glass-nav absolute bottom-0 left-0 right-0 z-30 px-2 flex justify-between items-center">
+            <button onclick="navigate('dashboard', true)" class="nav-tab flex flex-col items-center justify-center w-[18%] text-gray-400 dark:text-gray-500 data-[active=true]:text-themeGreen" data-id="dashboard">
+                <i class="ph-fill ph-squares-four text-xl"></i>
+                <span class="text-[9px] font-bold mt-0.5">Inicio</span>
+            </button>
+            <button onclick="navigate('ingresos', true)" class="nav-tab flex flex-col items-center justify-center w-[18%] text-gray-400 dark:text-gray-500 data-[active=true]:text-themeGreen" data-id="ingresos">
+                <i class="ph-fill ph-arrow-circle-down text-xl"></i>
+                <span class="text-[9px] font-bold mt-0.5">Ingresos</span>
+            </button>
+            <div class="relative w-[20%] h-full flex justify-center">
+                <button onclick="openAddModal()" class="absolute -top-6 w-14 h-14 bg-themeGreen text-white rounded-full shadow-lg flex items-center justify-center active:scale-90 transition-transform border-[4px] border-iosBg-light dark:border-iosBg-dark">
+                    <i class="ph ph-plus text-2xl font-bold"></i>
+                </button>
+            </div>
+            <button onclick="navigate('gastos', true)" class="nav-tab flex flex-col items-center justify-center w-[18%] text-gray-400 dark:text-gray-500 data-[active=true]:text-themeCafe" data-id="gastos">
+                <i class="ph-fill ph-arrow-circle-up text-xl"></i>
+                <span class="text-[9px] font-bold mt-0.5">Gastos</span>
+            </button>
+            <button onclick="navigate('prestamos', true)" class="nav-tab flex flex-col items-center justify-center w-[18%] text-gray-400 dark:text-gray-500 data-[active=true]:text-themeGreen" data-id="prestamos">
+                <i class="ph-fill ph-handshake text-xl"></i>
+                <span class="text-[9px] font-bold mt-0.5">Préstamos</span>
+            </button>
+        </nav>
+
+        <!-- OVERLAY -->
+        <div id="overlay" class="fixed inset-0 bg-black/40 z-[45] opacity-0 pointer-events-none transition-opacity duration-300 backdrop-blur-[2px]" onclick="closeAllModals()"></div>
+
+        <!-- MODAL AGREGAR / EDITAR REGISTRO -->
+        <div id="modal-add" class="modal-sheet">
+            <div class="modal-handle-container"><div class="modal-handle"></div></div>
+            <form id="add-form" class="flex-1 overflow-y-auto no-scrollbar px-6 pb-10 flex flex-col gap-6">
+                <div class="bg-gray-100 dark:bg-white/5 p-1 rounded-2xl flex">
+                    <button type="button" onclick="setFormMode('ingreso')" id="btn-ingreso" class="flex-1 py-2.5 text-[10px] font-black rounded-xl transition-all">INGRESO</button>
+                    <button type="button" onclick="setFormMode('gasto')" id="btn-gasto" class="flex-1 py-2.5 text-[10px] font-black rounded-xl transition-all">GASTO</button>
+                    <button type="button" onclick="setFormMode('prestamo')" id="btn-prestamo" class="flex-1 py-2.5 text-[10px] font-black rounded-xl transition-all">PRESTAR</button>
+                </div>
+
+                <div>
+                    <label class="text-[9px] font-black uppercase opacity-40 ml-1 tracking-widest">Monto</label>
+                    <div class="ios-input-full mt-1.5 flex items-center pr-2">
+                        <input type="text" id="in-amount-formatted" required class="ios-input flex-1 !text-2xl font-black text-themeGreen dark:text-themeGreen-light" placeholder="$ 0" inputmode="numeric">
+                        <input type="hidden" id="in-amount-raw">
+                        
+                        <!-- BOTÓN CÁMARA IA -->
+                        <button type="button" id="btn-camera" onclick="triggerCamera()" class="w-10 h-10 rounded-xl flex items-center justify-center bg-gray-200/50 dark:bg-white/10 active:scale-90 transition-all ml-2">
+                            <i id="icon-camera" class="ph-bold ph-camera text-xl text-gray-500 dark:text-gray-300"></i>
+                        </button>
+                        <input type="file" id="camera-input" accept="image/*" capture="environment" class="hidden" onchange="handleImage(event)">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div onclick="openDatePicker('in-date')">
+                        <label class="text-[9px] font-black uppercase opacity-40 ml-1 tracking-widest">Fecha Registro</label>
+                        <div class="ios-input-full mt-1.5 cursor-pointer justify-between">
+                            <span id="display-date" class="font-bold text-[14px]">Hoy</span>
+                            <i class="ph ph-calendar text-lg text-themeGreen opacity-60"></i>
+                            <input type="hidden" id="in-date">
+                        </div>
+                    </div>
+                    
+                    <div id="detalle-box">
+                        <label class="text-[9px] font-black uppercase opacity-40 ml-1 tracking-widest text-blue-500">Detalle (Opcional)</label>
+                        <div class="ios-input-full mt-1.5 border border-black/5 dark:border-white/5">
+                            <input type="text" id="in-detail" class="ios-input !text-[16px] font-bold" placeholder="Ej: Pizza...">
+                        </div>
+                    </div>
+
+                    <div id="paydate-box" class="hidden" onclick="openDatePicker('in-pay-date')">
+                        <label class="text-[9px] font-black uppercase opacity-40 ml-1 tracking-widest text-amber-500">¿Cuándo pagan?</label>
+                        <div class="ios-input-full mt-1.5 cursor-pointer justify-between border border-amber-500/20">
+                            <span id="display-pay-date" class="font-bold text-[14px] text-amber-600">Elegir...</span>
+                            <i class="ph ph-clock-afternoon text-lg text-amber-500 opacity-60"></i>
+                            <input type="hidden" id="in-pay-date">
+                        </div>
+                    </div>
+                </div>
+
+                <div id="person-field" class="hidden">
+                    <label class="text-[9px] font-black uppercase opacity-40 ml-1 tracking-widest">¿A quién?</label>
+                    <div class="ios-input-full mt-1.5">
+                        <input type="text" id="in-person" class="ios-input !text-[16px]" placeholder="Nombre">
+                    </div>
+                </div>
+
+                <div id="cat-box">
+                    <label class="text-[9px] font-black uppercase opacity-40 ml-1 tracking-widest">Categoría</label>
+                    <div id="cat-grid" class="grid grid-cols-3 gap-2.5 mt-2"></div>
+                </div>
+
+                <button type="submit" id="btn-submit-form" class="mt-auto w-full bg-themeGreen text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-transform tracking-widest uppercase text-[10px]">Guardar Registro</button>
+            </form>
+        </div>
+
+        <!-- MODAL DETALLES -->
+        <div id="modal-details" class="modal-sheet z-[55]">
+            <div class="modal-handle-container"><div class="modal-handle"></div></div>
+            <div class="px-8 pb-10 flex flex-col items-center text-center">
+                <div id="detail-icon-container" class="w-20 h-20 rounded-full flex items-center justify-center mb-4 text-4xl">
+                    <i id="detail-icon" class="ph-fill ph-circle"></i>
+                </div>
+                <p id="detail-category" class="text-sm font-black tracking-widest uppercase opacity-50 mb-1">Categoría</p>
+                <h3 id="detail-amount" class="text-4xl font-black tracking-tight mb-6">$ 0</h3>
+                
+                <div class="w-full bg-gray-100 dark:bg-white/5 rounded-3xl p-5 mb-8 text-left space-y-4">
+                    <div class="flex justify-between items-center border-b border-gray-200 dark:border-white/10 pb-3">
+                        <span class="text-[10px] font-black uppercase opacity-40 tracking-widest">Fecha</span>
+                        <span id="detail-date" class="font-bold text-sm">...</span>
+                    </div>
+                    <div id="detail-text-container" class="flex flex-col gap-1.5 hidden">
+                        <span class="text-[10px] font-black uppercase opacity-40 tracking-widest">Nota / Detalle</span>
+                        <p id="detail-text" class="font-medium text-[13px] leading-relaxed">...</p>
+                    </div>
+                </div>
+                
+                <div class="flex gap-3 w-full">
+                    <button id="btn-edit-detail" class="flex-1 py-4 bg-gray-900 dark:bg-white text-white dark:text-black font-black rounded-2xl text-[10px] uppercase tracking-widest active:scale-95 transition-all">Editar</button>
+                    <button id="btn-delete-detail" class="flex-1 py-4 bg-red-500/10 text-red-500 font-black rounded-2xl text-[10px] uppercase tracking-widest active:scale-95 transition-all">Eliminar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL ABONAR PRÉSTAMO -->
+        <div id="modal-abono" class="modal-sheet z-[60]">
+            <div class="modal-handle-container"><div class="modal-handle"></div></div>
+            <div class="px-6 pb-10 flex flex-col gap-6">
+                <h3 class="text-2xl font-black tracking-tight text-center">Registrar Pago</h3>
+                <p class="text-center text-sm font-black text-themeGreen dark:text-themeGreen-light tracking-tight" id="abono-subtitle">Faltan $0</p>
+                
+                <div>
+                    <label class="text-[9px] font-black uppercase opacity-40 ml-1 tracking-widest">Monto a abonar</label>
+                    <div class="ios-input-full mt-1.5">
+                        <input type="text" id="abono-amount-formatted" required class="ios-input !text-2xl font-black text-gray-900 dark:text-white" placeholder="$ 0" inputmode="numeric">
+                        <input type="hidden" id="abono-amount-raw">
+                    </div>
+                </div>
+
+                <button type="button" id="btn-submit-abono" onclick="processAbono()" class="mt-auto w-full bg-themeGreen text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-transform tracking-widest uppercase text-[10px] flex items-center justify-center gap-2">
+                    <span id="abono-btn-text">Guardar Abono</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- MODAL CALENDARIO -->
+        <div id="modal-datepicker" class="modal-sheet z-[60]">
+            <div class="modal-handle-container"><div class="modal-handle"></div></div>
+            <div class="px-6 pb-10 flex flex-col">
+                <div class="flex items-center justify-between mb-6">
+                    <button onclick="moveCalMonth(-1)" class="w-10 h-10 rounded-xl bg-gray-100 dark:bg-white/5 flex items-center justify-center active:scale-90"><i class="ph-bold ph-caret-left"></i></button>
+                    <h3 id="cal-month-title" class="text-lg font-black tracking-tight">Mayo 2026</h3>
+                    <button onclick="moveCalMonth(1)" class="w-10 h-10 rounded-xl bg-gray-100 dark:bg-white/5 flex items-center justify-center active:scale-90"><i class="ph-bold ph-caret-right"></i></button>
+                </div>
+
+                <div class="bg-gray-50 dark:bg-white/5 p-4 rounded-[28px] mb-6">
+                    <div class="grid grid-cols-7 text-center mb-3 text-[10px] font-black opacity-30 tracking-widest">
+                        <span>D</span><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span>
+                    </div>
+                    <div id="datepicker-grid" class="grid grid-cols-7 gap-1"></div>
+                </div>
+
+                <div class="flex flex-col gap-2">
+                    <button onclick="setTodayDP()" class="w-full py-3.5 bg-themeGreen/10 text-themeGreen rounded-2xl font-black text-[10px] uppercase tracking-widest">Seleccionar Hoy</button>
+                    <button onclick="closeModal('modal-datepicker')" class="w-full py-3.5 font-black text-[10px] uppercase tracking-widest opacity-40">Cerrar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL SELECCIÓN MES GLOBAL -->
+        <div id="modal-month-selector" class="modal-sheet">
+            <div class="modal-handle-container"><div class="modal-handle"></div></div>
+            <div class="px-6 pb-10 flex flex-col">
+                <div class="flex items-center justify-between mb-6 px-4">
+                    <button onclick="changeYearGlobal(-1)" class="w-12 h-12 bg-gray-100 dark:bg-white/5 rounded-2xl flex items-center justify-center active:scale-90 transition-transform"><i class="ph-bold ph-caret-left text-lg"></i></button>
+                    <div class="flex flex-col items-center">
+                        <span class="text-[9px] font-black opacity-30 uppercase tracking-[0.2em] mb-1">Año Seleccionado</span>
+                        <span id="selector-year" class="text-3xl font-black tracking-tighter">2026</span>
+                    </div>
+                    <button onclick="changeYearGlobal(1)" class="w-12 h-12 bg-gray-100 dark:bg-white/5 rounded-2xl flex items-center justify-center active:scale-90 transition-transform"><i class="ph-bold ph-caret-right text-lg"></i></button>
+                </div>
+                
+                <div class="grid grid-cols-3 gap-2.5 mb-6" id="month-grid-selector"></div>
+                
+                <button onclick="goToCurrentMonth()" class="w-full py-4 bg-themeGreen text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.15em] shadow-xl shadow-themeGreen/20 active:scale-95 transition-transform flex items-center justify-center gap-2">
+                    <i class="ph-fill ph-calendar-star text-lg"></i>
+                    Ir al Mes Actual (Hoy)
+                </button>
+            </div>
+        </div>
+
+        <!-- MODAL ALERTA PRÉSTAMO VENCIDO -->
+        <div id="modal-alert" class="modal-sheet shadow-2xl border-2 border-amber-500/20">
+            <div class="modal-handle-container"><div class="modal-handle"></div></div>
+            <div class="px-8 pb-10 flex flex-col items-center text-center">
+                <div class="w-20 h-20 bg-amber-500/10 text-amber-500 rounded-full flex items-center justify-center mb-6">
+                    <i class="ph-fill ph-warning-circle text-5xl"></i>
+                </div>
+                <h3 class="text-2xl font-black tracking-tight mb-2">¡Préstamo Vencido!</h3>
+                <p id="alert-text" class="text-sm opacity-60 mb-8 font-medium">Tienes cobros pendientes que ya superaron su fecha de pago acordada.</p>
+                <div id="alert-list" class="w-full space-y-3 mb-8 max-h-[300px] overflow-y-auto no-scrollbar"></div>
+                <button onclick="closeModal('modal-alert')" class="w-full py-4 bg-gray-900 dark:bg-white text-white dark:text-black font-black rounded-2xl text-[10px] uppercase tracking-widest">Entendido</button>
+            </div>
+        </div>
+
+        <!-- MODAL AJUSTES -->
+        <div id="modal-settings" class="modal-sheet z-[60]">
+            <div class="modal-handle-container"><div class="modal-handle"></div></div>
+            <div class="px-6 pb-10 flex flex-col">
+                <h2 class="text-2xl font-black mb-8 text-center tracking-tight">Ajustes</h2>
+                <div class="space-y-4">
+                    
+                    <!-- NUEVO: BOTÓN DE ANÁLISIS / DASHBOARD -->
+                    <button onclick="openAnalyticsModal()" class="w-full bg-blue-500/5 p-4 rounded-3xl flex justify-between items-center active:scale-95 transition-all">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-blue-500/20 text-blue-600 dark:text-blue-400 rounded-xl flex items-center justify-center"><i class="ph-bold ph-chart-bar text-lg"></i></div>
+                            <div class="flex flex-col text-left text-blue-600 dark:text-blue-400">
+                                <span class="font-bold text-sm tracking-tight">Análisis del Mes</span>
+                                <span class="text-[9px] opacity-60 font-bold uppercase tracking-widest">Estadísticas y comparativas</span>
+                            </div>
+                        </div>
+                        <i class="ph-bold ph-caret-right opacity-40 text-blue-600 dark:text-blue-400"></i>
+                    </button>
+
+                    <button onclick="openCustomCatsModal()" class="w-full bg-gray-100 dark:bg-white/5 p-4 rounded-3xl flex justify-between items-center active:scale-95 transition-all">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-gray-300 rounded-xl flex items-center justify-center"><i class="ph-bold ph-squares-four text-lg"></i></div>
+                            <div class="flex flex-col text-left">
+                                <span class="font-bold text-sm tracking-tight">Gestor de Categorías</span>
+                                <span class="text-[9px] opacity-40 font-bold uppercase tracking-widest">Editar, crear o eliminar todas</span>
+                            </div>
+                        </div>
+                        <i class="ph-bold ph-caret-right text-gray-400"></i>
+                    </button>
+
+                    <button onclick="openThemeModal()" class="w-full bg-themeGreen/5 p-4 rounded-3xl flex justify-between items-center active:scale-95 transition-all">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-themeGreen/20 text-themeGreen rounded-xl flex items-center justify-center"><i class="ph-bold ph-palette text-lg"></i></div>
+                            <div class="flex flex-col text-left text-themeGreen">
+                                <span class="font-bold text-sm tracking-tight">Temas y Colores</span>
+                                <span class="text-[9px] opacity-60 font-bold uppercase tracking-widest">Personaliza la app a tu gusto</span>
+                            </div>
+                        </div>
+                        <i class="ph-bold ph-caret-right opacity-40 text-themeGreen"></i>
+                    </button>
+
+                    <button onclick="openApiModal()" class="w-full bg-purple-500/5 p-4 rounded-3xl flex justify-between items-center active:scale-95 transition-all">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-purple-500/20 text-purple-600 dark:text-purple-400 rounded-xl flex items-center justify-center"><i class="ph-bold ph-key text-lg"></i></div>
+                            <div class="flex flex-col text-left text-purple-600 dark:text-purple-400">
+                                <span class="font-bold text-sm tracking-tight">Inteligencia Artificial</span>
+                                <span class="text-[9px] opacity-60 font-bold uppercase tracking-widest">Configurar llave de lectura</span>
+                            </div>
+                        </div>
+                        <i class="ph-bold ph-caret-right opacity-40 text-purple-600 dark:text-purple-400"></i>
+                    </button>
+
+                    <div class="bg-gray-100 dark:bg-white/5 p-5 rounded-2xl flex justify-between items-center">
+                        <div class="flex flex-col">
+                            <span class="font-bold text-sm tracking-tight">Modo Oscuro</span>
+                            <span class="text-[9px] opacity-40 font-bold uppercase">Apariencia</span>
+                        </div>
+                        <button onclick="toggleDarkMode()" id="dark-btn" class="w-12 h-6 bg-gray-300 dark:bg-themeGreen rounded-full relative transition-all">
+                            <div class="absolute top-1 left-1 dark:left-7 w-4 h-4 bg-white rounded-full transition-all shadow"></div>
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <button onclick="exportData()" class="bg-gray-100 dark:bg-white/5 text-gray-900 dark:text-white p-6 rounded-3xl flex flex-col items-center gap-2 font-black text-[9px] tracking-widest uppercase"><i class="ph-bold ph-download-simple text-2xl opacity-60"></i>Exportar</button>
+                        <label class="bg-gray-100 dark:bg-white/5 text-gray-900 dark:text-white p-6 rounded-3xl flex flex-col items-center gap-2 font-black text-[9px] tracking-widest uppercase cursor-pointer">
+                            <i class="ph-bold ph-upload-simple text-2xl opacity-60"></i>Importar
+                            <input type="file" id="import-input" class="hidden" accept=".json">
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL: ANÁLISIS DEL MES (NUEVO DASHBOARD) -->
+        <div id="modal-analytics" class="modal-sheet z-[75]">
+            <div class="modal-handle-container"><div class="modal-handle"></div></div>
+            <div class="px-6 flex flex-col h-full pb-10 overflow-y-auto no-scrollbar">
+                
+                <h3 class="text-2xl font-black tracking-tight mb-6 text-center">Análisis de <span id="analytics-month-name" class="text-themeGreen"></span></h3>
+                
+                <!-- SECCIÓN 1: EL VERSUS (TARJETA DE DIAGNÓSTICO) -->
+                <p class="text-[10px] font-black uppercase tracking-widest opacity-40 mb-2 ml-1">Comparativa</p>
+                <div id="analytics-versus-card" class="bg-iosCard-light dark:bg-iosCard-dark border border-black/5 dark:border-white/5 p-5 rounded-3xl mb-6 shadow-sm flex flex-col items-center text-center">
+                    <!-- Se llena con JS -->
+                </div>
+
+                <!-- SECCIÓN 2: DISTRIBUCIÓN DE GASTOS (BARRAS HORIZONTALES) -->
+                <p class="text-[10px] font-black uppercase tracking-widest opacity-40 mb-2 ml-1">Top Gastos del Mes</p>
+                <div class="bg-iosCard-light dark:bg-iosCard-dark border border-black/5 dark:border-white/5 p-5 rounded-3xl mb-6 shadow-sm">
+                    <div id="analytics-categories" class="space-y-4">
+                        <!-- Se llena con JS -->
+                    </div>
+                </div>
+
+                <!-- SECCIÓN 3: FLUJO E INGRESOS -->
+                <p class="text-[10px] font-black uppercase tracking-widest opacity-40 mb-2 ml-1">Flujo de Dinero</p>
+                <div class="bg-iosCard-light dark:bg-iosCard-dark border border-black/5 dark:border-white/5 p-5 rounded-3xl mb-6 shadow-sm">
+                    <div class="flex justify-between items-end mb-2">
+                        <div class="flex flex-col">
+                            <span class="text-[9px] font-black uppercase opacity-40 tracking-widest">Ingresos Totales</span>
+                            <span id="analytics-inc-text" class="text-lg font-black text-themeGreen"></span>
+                        </div>
+                        <div class="flex flex-col text-right">
+                            <span class="text-[9px] font-black uppercase opacity-40 tracking-widest">Gastos Totales</span>
+                            <span id="analytics-exp-text" class="text-lg font-black text-gray-900 dark:text-white"></span>
+                        </div>
+                    </div>
+                    <!-- Barra de Flujo -->
+                    <div class="w-full h-3 bg-gray-200 dark:bg-white/10 rounded-full overflow-hidden flex">
+                        <div id="analytics-bar-inc" class="h-full bg-themeGreen progress-bar-fill w-0"></div>
+                        <div id="analytics-bar-exp" class="h-full bg-gray-800 dark:bg-gray-400 progress-bar-fill w-0"></div>
+                    </div>
+                    <p id="analytics-flow-msg" class="text-[9px] font-black uppercase tracking-widest mt-3 text-center opacity-60"></p>
+                </div>
+
+                <button onclick="closeModal('modal-analytics')" class="w-full bg-gray-100 dark:bg-white/10 text-gray-900 dark:text-white font-black py-4 rounded-2xl shadow-sm active:scale-95 transition-transform tracking-widest uppercase text-[10px] mt-4">Cerrar Análisis</button>
+
+            </div>
+        </div>
+
+        <!-- MODAL: GESTOR DE CATEGORÍAS PERSONALIZADAS -->
+        <div id="modal-custom-cats" class="modal-sheet z-[70]">
+            <div class="modal-handle-container"><div class="modal-handle"></div></div>
+            <div class="px-6 flex flex-col h-full pb-6">
+                <h3 class="text-2xl font-black tracking-tight mb-6 text-center">Mis Categorías</h3>
+                
+                <div class="bg-gray-100 dark:bg-white/5 p-1 rounded-2xl flex mb-6 flex-shrink-0">
+                    <button type="button" onclick="setCustomCatTab('gasto')" id="btn-cc-gasto" class="flex-1 py-2.5 text-[10px] font-black rounded-xl transition-all bg-white dark:bg-white/20 shadow-sm">GASTOS</button>
+                    <button type="button" onclick="setCustomCatTab('ingreso')" id="btn-cc-ingreso" class="flex-1 py-2.5 text-[10px] font-black rounded-xl transition-all opacity-40">INGRESOS</button>
+                </div>
+
+                <div id="custom-cat-list" class="space-y-2 mb-6 flex-1 overflow-y-auto no-scrollbar"></div>
+
+                <div class="mt-auto border-t border-black/5 dark:border-white/5 pt-6">
+                    <h4 id="cc-form-title" class="text-[9px] font-black uppercase opacity-40 tracking-widest mb-3">Crear Nueva</h4>
+                    <div class="ios-input-full mb-3">
+                        <input type="text" id="cc-name" class="ios-input !text-[14px]" placeholder="Nombre de categoría">
+                    </div>
+                    
+                    <div class="ios-input-full mb-3 flex items-center gap-2 !py-2.5 !bg-gray-200/50 dark:!bg-white/5 border border-black/5 dark:border-white/5">
+                        <i class="ph ph-magnifying-glass text-gray-400 text-lg"></i>
+                        <input type="text" id="cc-icon-search" class="ios-input !text-[13px] !font-medium" placeholder="Buscar icono (ej: casa, auto, comida...)" oninput="filterCcIcons()">
+                    </div>
+                    
+                    <div class="flex gap-3 mb-3 overflow-x-auto no-scrollbar pb-2" id="cc-icon-sel"></div>
+                    <div class="flex gap-3 mb-4 overflow-x-auto no-scrollbar pb-2" id="cc-color-sel"></div>
+                    
+                    <div class="flex gap-2">
+                        <button onclick="saveCustomCat()" id="cc-btn-save" class="flex-1 bg-themeGreen text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-transform tracking-widest uppercase text-[10px]">Guardar</button>
+                        <button onclick="cancelEditCustomCat()" id="cc-btn-cancel" class="hidden px-6 bg-gray-200 dark:bg-white/10 text-gray-500 dark:text-gray-300 font-black rounded-2xl active:scale-95 transition-all text-[10px] uppercase tracking-widest"><i class="ph-bold ph-x text-lg"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL: CONFIGURACIÓN DE IA (API KEY) -->
+        <div id="modal-api-key" class="modal-sheet z-[70]">
+            <div class="modal-handle-container"><div class="modal-handle"></div></div>
+            <div class="px-6 flex flex-col h-full pb-8">
+                <div class="w-16 h-16 bg-purple-500/10 text-purple-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="ph-fill ph-brain text-4xl"></i>
+                </div>
+                <h3 class="text-2xl font-black tracking-tight mb-2 text-center">Inteligencia Artificial</h3>
+                <p class="text-center text-sm font-medium opacity-60 mb-8 px-4">Pega tu Llave de Google Gemini para activar la lectura de boletas con cámara. Se guardará de forma 100% segura y local en tu dispositivo.</p>
+                
+                <div class="ios-input-full mb-6 border border-purple-500/20">
+                    <input type="password" id="api-key-input" class="ios-input !text-[14px]" placeholder="Pega tu API Key aquí...">
+                </div>
+                
+                <button onclick="saveApiKey()" class="w-full bg-purple-500 text-white font-black py-4 rounded-2xl shadow-lg shadow-purple-500/20 active:scale-95 transition-transform tracking-widest uppercase text-[10px] mt-auto">Guardar Llave Segura</button>
+            </div>
+        </div>
+        
+        <!-- MODAL TEMAS Y COLORES -->
+        <div id="modal-theme" class="modal-sheet z-[75]">
+            <div class="modal-handle-container"><div class="modal-handle"></div></div>
+            <div class="px-6 flex flex-col h-full pb-8">
+                <h3 class="text-2xl font-black tracking-tight mb-6 text-center">Temas y Colores</h3>
+                
+                <p class="text-[10px] font-black uppercase tracking-widest opacity-40 mb-3 ml-2">Temas Rápidos</p>
+                <div class="grid grid-cols-4 gap-2 mb-8" id="theme-presets-grid">
+                    <button onclick="setPresetTheme('classic')" id="btn-theme-classic" class="bg-gray-100 dark:bg-white/5 p-3 rounded-2xl flex flex-col items-center gap-2 border-[3px] border-transparent transition-all">
+                        <div class="w-8 h-8 rounded-full bg-[#3A5A40]"></div>
+                        <span class="text-[8px] font-black uppercase">Clásico</span>
+                    </button>
+                    <button onclick="setPresetTheme('ocean')" id="btn-theme-ocean" class="bg-gray-100 dark:bg-white/5 p-3 rounded-2xl flex flex-col items-center gap-2 border-[3px] border-transparent transition-all">
+                        <div class="w-8 h-8 rounded-full bg-[#0284c7]"></div>
+                        <span class="text-[8px] font-black uppercase">Océano</span>
+                    </button>
+                    <button onclick="setPresetTheme('cyberpunk')" id="btn-theme-cyberpunk" class="bg-gray-100 dark:bg-white/5 p-3 rounded-2xl flex flex-col items-center gap-2 border-[3px] border-transparent transition-all">
+                        <div class="w-8 h-8 rounded-full bg-[#db2777]"></div>
+                        <span class="text-[8px] font-black uppercase">Neón</span>
+                    </button>
+                    <button onclick="setPresetTheme('coffee')" id="btn-theme-coffee" class="bg-gray-100 dark:bg-white/5 p-3 rounded-2xl flex flex-col items-center gap-2 border-[3px] border-transparent transition-all">
+                        <div class="w-8 h-8 rounded-full bg-[#b45309]"></div>
+                        <span class="text-[8px] font-black uppercase">Café</span>
+                    </button>
+                </div>
+
+                <div class="flex-1 overflow-y-auto no-scrollbar pb-6">
+                    <p class="text-[10px] font-black uppercase tracking-widest opacity-40 mb-3 ml-2">Personalización Avanzada</p>
+                    <div class="space-y-3">
+                        <div class="bg-gray-100 dark:bg-white/5 p-4 rounded-2xl flex justify-between items-center">
+                            <div class="flex flex-col">
+                                <span class="font-bold text-sm tracking-tight">Color Primario</span>
+                                <span class="text-[8px] opacity-40 font-bold uppercase tracking-widest">Ingresos y acentos</span>
+                            </div>
+                            <input type="color" id="col-prim" onchange="previewCustomTheme()" class="w-10 h-10 p-0 border-0 rounded-lg cursor-pointer bg-transparent">
+                        </div>
+                        <div class="bg-gray-100 dark:bg-white/5 p-4 rounded-2xl flex justify-between items-center">
+                            <div class="flex flex-col">
+                                <span class="font-bold text-sm tracking-tight">Color Secundario</span>
+                                <span class="text-[8px] opacity-40 font-bold uppercase tracking-widest">Gastos y tarjetas</span>
+                            </div>
+                            <input type="color" id="col-sec" onchange="previewCustomTheme()" class="w-10 h-10 p-0 border-0 rounded-lg cursor-pointer bg-transparent">
+                        </div>
+                        <div class="bg-gray-100 dark:bg-white/5 p-4 rounded-2xl flex justify-between items-center">
+                            <div class="flex flex-col">
+                                <span class="font-bold text-sm tracking-tight">Fondo (Día)</span>
+                                <span class="text-[8px] opacity-40 font-bold uppercase tracking-widest">Base modo claro</span>
+                            </div>
+                            <input type="color" id="col-bgl" onchange="previewCustomTheme()" class="w-10 h-10 p-0 border-0 rounded-lg cursor-pointer bg-transparent">
+                        </div>
+                        <div class="bg-gray-100 dark:bg-white/5 p-4 rounded-2xl flex justify-between items-center">
+                            <div class="flex flex-col">
+                                <span class="font-bold text-sm tracking-tight">Fondo (Noche)</span>
+                                <span class="text-[8px] opacity-40 font-bold uppercase tracking-widest">Base modo oscuro</span>
+                            </div>
+                            <input type="color" id="col-bgd" onchange="previewCustomTheme()" class="w-10 h-10 p-0 border-0 rounded-lg cursor-pointer bg-transparent">
+                        </div>
+                    </div>
+                </div>
+
+                <button onclick="saveTheme()" class="mt-auto w-full bg-themeGreen text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-transform tracking-widest uppercase text-[10px] border border-white/20">Guardar Cambios</button>
+            </div>
+        </div>
+
+        <!-- MODAL CARGANDO IA -->
+        <div id="modal-ai-loading" class="fixed inset-0 bg-black/60 z-[100] opacity-0 pointer-events-none transition-opacity duration-300 backdrop-blur-sm flex items-center justify-center">
+            <div class="bg-iosCard-light dark:bg-iosCard-dark p-8 rounded-[32px] flex flex-col items-center shadow-2xl mx-6 w-64 text-center border border-black/5 dark:border-white/5">
+                <div class="w-12 h-12 border-[4px] border-gray-200 dark:border-white/10 border-t-themeGreen dark:border-t-themeGreen-light rounded-full animate-spin mb-5"></div>
+                <h3 class="font-black text-lg tracking-tight mb-1 text-gray-900 dark:text-white">Analizando...</h3>
+                <p class="text-[10px] uppercase tracking-widest opacity-50 font-bold text-gray-900 dark:text-white">Leyendo boleta</p>
+            </div>
+        </div>
+
+        <!-- MODAL RESUMEN IA -->
+        <div id="modal-ai-summary" class="modal-sheet z-[80]">
+            <div class="modal-handle-container"><div class="modal-handle"></div></div>
+            <div class="px-6 pb-10 flex flex-col h-full">
+                <div class="flex-1 flex flex-col justify-center">
+                    <div class="w-16 h-16 bg-themeGreen/10 text-themeGreen rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="ph-fill ph-sparkle text-3xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-black tracking-tight mb-6 text-center">Resumen de la IA</h3>
+                    <div class="bg-gray-100 dark:bg-white/5 rounded-3xl p-5 mb-6 space-y-4 shadow-sm border border-black/5 dark:border-white/5">
+                        <div class="flex justify-between items-center border-b border-black/5 dark:border-white/5 pb-3">
+                            <span class="text-[10px] font-black uppercase opacity-40 tracking-widest">Monto Encontrado</span>
+                            <span id="ai-sum-monto" class="font-black text-xl text-themeGreen dark:text-white"></span>
+                        </div>
+                        <div class="flex justify-between items-center border-b border-black/5 dark:border-white/5 pb-3">
+                            <span class="text-[10px] font-black uppercase opacity-40 tracking-widest">Categoría Sugerida</span>
+                            <span id="ai-sum-cat" class="font-bold text-sm"></span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-[10px] font-black uppercase opacity-40 tracking-widest">Detalle</span>
+                            <span id="ai-sum-det" class="font-bold text-sm text-right max-w-[60%] truncate"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex flex-col gap-3 mt-auto">
+                    <button onclick="saveAiResultDirectly()" class="w-full bg-themeGreen text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-transform tracking-widest uppercase text-[10px] flex items-center justify-center gap-2">
+                        <i class="ph-bold ph-check-circle text-lg"></i>Aceptar y Guardar
+                    </button>
+                    <div class="flex gap-3">
+                        <button onclick="applyAiResult()" class="flex-1 bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-gray-300 font-black py-4 rounded-2xl active:scale-95 transition-transform tracking-widest uppercase text-[10px]">Editar</button>
+                        <button onclick="closeModal('modal-ai-summary')" class="flex-1 bg-red-500/10 text-red-500 font-black py-4 rounded-2xl active:scale-95 transition-transform tracking-widest uppercase text-[10px]">Descartar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL ERROR IA -->
+        <div id="modal-ai-error" class="modal-sheet z-[80]">
+            <div class="modal-handle-container"><div class="modal-handle"></div></div>
+            <div class="px-6 pb-10 flex flex-col h-full items-center text-center">
+                <div class="flex-1 flex flex-col justify-center items-center w-full">
+                    <div class="w-16 h-16 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mb-4">
+                        <i class="ph-fill ph-warning-circle text-4xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-black tracking-tight mb-2">Error de Lectura</h3>
+                    <p id="ai-error-text" class="text-sm opacity-60 font-medium px-4">No pudimos procesar la imagen.</p>
+                </div>
+                <button onclick="closeModal('modal-ai-error')" class="w-full bg-gray-900 dark:bg-white text-white dark:text-black font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-transform tracking-widest uppercase text-[10px] mt-auto">Entendido</button>
+            </div>
+        </div>
+
+        <div id="toast" class="fixed top-12 left-1/2 -translate-x-1/2 z-[100] bg-gray-800/95 dark:bg-white/95 text-white dark:text-black px-6 py-3 rounded-full text-[9px] font-black shadow-2xl opacity-0 transition-all duration-400 -translate-y-10 tracking-widest uppercase pointer-events-none"></div>
+
+    </div>
+
+    <script>
+        // --- SISTEMA DE TEMAS Y COLORES MAESTROS ---
+        const PRESET_THEMES = {
+            classic: { p: '#3A5A40', s: '#582F0E', bl: '#F2F2F7', bd: '#000000' },
+            ocean: { p: '#0284c7', s: '#0f766e', bl: '#f0f9ff', bd: '#082f49' },
+            cyberpunk: { p: '#db2777', s: '#9333ea', bl: '#fdf2f8', bd: '#12001b' },
+            coffee: { p: '#b45309', s: '#78350f', bl: '#fef3c7', bd: '#1c1917' }
+        };
+        
+        let tempColors = { ...PRESET_THEMES.classic };
+
+        function hexToRgbSpace(hex) {
+            var bigint = parseInt(hex.replace('#',''), 16);
+            return ((bigint >> 16) & 255) + " " + ((bigint >> 8) & 255) + " " + (bigint & 255);
+        }
+
+        function blendHex(c1, c2, p) {
+            const h2r = h => [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)];
+            const r1 = h2r(c1), r2 = h2r(c2);
+            const r = Math.round(r1[0] + (r2[0] - r1[0]) * p);
+            const g = Math.round(r1[1] + (r2[1] - r1[1]) * p);
+            const b = Math.round(r1[2] + (r2[2] - r1[2]) * p);
+            return "#" + (1 << 24 | r << 16 | g << 8 | b).toString(16).slice(1);
+        }
+
+        function applyColorTheme(themeName, customObj = null) {
+            let colors = PRESET_THEMES[themeName];
+            if (themeName === 'custom' && customObj) colors = customObj;
+            else if (!colors) colors = PRESET_THEMES['classic'];
+
+            const cssVars = {
+                '--c-green': hexToRgbSpace(colors.p),
+                '--c-green-light': hexToRgbSpace(blendHex(colors.p, '#FFFFFF', 0.4)),
+                '--c-green-dark': hexToRgbSpace(blendHex(colors.p, '#000000', 0.2)),
+                '--c-cafe': hexToRgbSpace(colors.s),
+                '--c-cafe-light': hexToRgbSpace(blendHex(colors.s, '#FFFFFF', 0.4)),
+                '--c-cafe-dark': hexToRgbSpace(blendHex(colors.s, '#000000', 0.2)),
+                '--c-bg-light': hexToRgbSpace(colors.bl),
+                '--c-bg-dark': hexToRgbSpace(colors.bd),
+                '--c-card-light': hexToRgbSpace(blendHex(colors.bl, '#FFFFFF', 0.5)),
+                '--c-card-dark': hexToRgbSpace(blendHex(colors.bd, '#FFFFFF', 0.12))
+            };
+
+            const root = document.documentElement;
+            for (const [key, val] of Object.entries(cssVars)) {
+                root.style.setProperty(key, val);
+            }
+            
+            document.querySelector('meta[name="theme-color"]').setAttribute('content', colors.p);
+        }
+
+        function openThemeModal() {
+            const t = appData.settings.colorTheme || 'classic';
+            const c = appData.settings.customColors || PRESET_THEMES.classic;
+            tempColors = t === 'custom' ? { ...c } : { ...PRESET_THEMES[t] };
+
+            document.getElementById('col-prim').value = tempColors.p;
+            document.getElementById('col-sec').value = tempColors.s;
+            document.getElementById('col-bgl').value = tempColors.bl;
+            document.getElementById('col-bgd').value = tempColors.bd;
+
+            highlightThemeBtn(t);
+            document.getElementById('modal-theme').classList.add('modal-active');
+        }
+
+        function highlightThemeBtn(name) {
+            document.querySelectorAll('#theme-presets-grid button').forEach(b => {
+                b.classList.remove('border-themeGreen');
+                b.classList.add('border-transparent');
+            });
+            if(name !== 'custom') {
+                const btn = document.getElementById('btn-theme-' + name);
+                if(btn) {
+                    btn.classList.remove('border-transparent');
+                    btn.classList.add('border-themeGreen');
+                }
+            }
+        }
+
+        function setPresetTheme(name) {
+            tempColors = { ...PRESET_THEMES[name] };
+            document.getElementById('col-prim').value = tempColors.p;
+            document.getElementById('col-sec').value = tempColors.s;
+            document.getElementById('col-bgl').value = tempColors.bl;
+            document.getElementById('col-bgd').value = tempColors.bd;
+
+            applyColorTheme(name);
+            highlightThemeBtn(name);
+            appData.settings.colorTheme = name; 
+        }
+
+        function previewCustomTheme() {
+            tempColors = {
+                p: document.getElementById('col-prim').value,
+                s: document.getElementById('col-sec').value,
+                bl: document.getElementById('col-bgl').value,
+                bd: document.getElementById('col-bgd').value
+            };
+            applyColorTheme('custom', tempColors);
+            highlightThemeBtn('custom');
+            appData.settings.colorTheme = 'custom';
+        }
+
+        function saveTheme() {
+            appData.settings.customColors = tempColors;
+            save();
+            closeModal('modal-theme');
+            showToast('TEMA GUARDADO');
+        }
+
+        const defaultCats = {
+            gasto: [
+                { n: 'Supermercado', i: 'ph-fill ph-shopping-cart', c: 'text-blue-500' },
+                { n: 'Comida', i: 'ph-fill ph-hamburger', c: 'text-red-500' },
+                { n: 'Transporte', i: 'ph-fill ph-bus', c: 'text-orange-500' },
+                { n: 'Salud', i: 'ph-fill ph-first-aid', c: 'text-emerald-500' },
+                { n: 'Hogar', i: 'ph-fill ph-house', c: 'text-indigo-500' },
+                { n: 'Ocio', i: 'ph-fill ph-book-open', c: 'text-slate-600' },
+                { n: 'Personal', i: 'ph-fill ph-user', c: 'text-pink-400' },
+                { n: 'Ropa', i: 'ph-fill ph-t-shirt', c: 'text-purple-500' },
+                { n: 'Otros', i: 'ph-fill ph-dots-three-circle', c: 'text-gray-400' }
+            ],
+            ingreso: [
+                { n: 'Sueldo', i: 'ph-fill ph-briefcase', c: 'text-green-600' },
+                { n: 'Venta', i: 'ph-fill ph-tag', c: 'text-blue-600' },
+                { n: 'Regalo', i: 'ph-fill ph-gift', c: 'text-pink-500' },
+                { n: 'Otros', i: 'ph-fill ph-dots-three-circle', c: 'text-gray-400' }
+            ]
+        };
+
+        let appData = JSON.parse(localStorage.getItem('finanzas_rioluquitas'));
+        
+        if (!appData) {
+            appData = { records: [], settings: { dark: false, apiKey: '', colorTheme: 'classic' }, cats: JSON.parse(JSON.stringify(defaultCats)) };
+        } else {
+            if (!appData.settings) appData.settings = { dark: false, apiKey: '', colorTheme: 'classic' };
+            if (!appData.cats) {
+                appData.cats = {
+                    gasto: [...defaultCats.gasto, ...(appData.customCats?.gasto || [])],
+                    ingreso: [...defaultCats.ingreso, ...(appData.customCats?.ingreso || [])]
+                };
+            }
+        }
+
+        let tempAiResult = null; 
+        let loadedPastMonths = 0;
+
+        function openApiModal() {
+            document.getElementById('api-key-input').value = appData.settings.apiKey || '';
+            document.getElementById('modal-api-key').classList.add('modal-active');
+        }
+
+        function saveApiKey() {
+            if(document.activeElement) document.activeElement.blur();
+            appData.settings.apiKey = document.getElementById('api-key-input').value.trim();
+            save();
+            closeModal('modal-api-key');
+            showToast('LLAVE GUARDADA');
+        }
+
+        function triggerCamera() {
+            if (!navigator.onLine) {
+                return showToast('SIN CONEXIÓN A INTERNET', 3000);
+            }
+            if (!appData.settings.apiKey) {
+                return showToast('FALTA LLAVE DE IA EN AJUSTES', 3000);
+            }
+            document.getElementById('camera-input').click();
+        }
+
+        function handleImage(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            document.getElementById('modal-ai-loading').classList.remove('opacity-0', 'pointer-events-none');
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 800; 
+                    const scaleSize = MAX_WIDTH / img.width;
+                    canvas.width = MAX_WIDTH;
+                    canvas.height = img.height * scaleSize;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    
+                    const base64Image = canvas.toDataURL('image/jpeg', 0.6).split(',')[1];
+                    sendToGemini(base64Image);
+                }
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function sendToGemini(base64Data) {
+            const apiKey = appData.settings.apiKey;
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+            
+            const currentCatNames = appData.cats.gasto.map(c => c.n).join(', ');
+            
+            const prompt = `Eres un experto contable de Chile. Analiza la boleta o comprobante de pago.
+            1. Extrae el MONTO TOTAL exacto.
+            2. En 'detalle': Si la boleta tiene productos, resúmelos en 1-3 palabras. Si es una boleta simple (ej. comprobante Transbank) que solo tiene el monto y el nombre del local, escribe el nombre del local comercial. Si no hay información útil, déjalo completamente en blanco ("").
+            3. En 'categoria': Sugiere una categoría basándote en el nombre del local o los productos. DEBE ser estrictamente una de esta lista: [${currentCatNames}] o 'Otros'.`;
+
+            const payload = {
+                contents: [{
+                    parts: [
+                        { text: prompt },
+                        { inlineData: { mimeType: "image/jpeg", data: base64Data } }
+                    ]
+                }],
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "OBJECT",
+                        properties: {
+                            monto: { type: "INTEGER" },
+                            detalle: { type: "STRING" },
+                            categoria: { type: "STRING" }
+                        },
+                        required: ["monto", "detalle", "categoria"]
+                    }
+                }
+            };
+
+            try {
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                
+                if (!res.ok) {
+                    throw new Error(data.error?.message || 'Error de conexión con Google');
+                }
+                
+                const textRes = data.candidates[0].content.parts[0].text;
+                const result = JSON.parse(textRes);
+                
+                tempAiResult = result;
+                
+                document.getElementById('modal-ai-loading').classList.add('opacity-0', 'pointer-events-none');
+                
+                document.getElementById('ai-sum-monto').textContent = '$ ' + new Intl.NumberFormat('es-CL').format(result.monto);
+                document.getElementById('ai-sum-cat').textContent = result.categoria || 'Otros';
+                document.getElementById('ai-sum-det').textContent = result.detalle ? result.detalle : 'Sin detalle';
+                
+                document.getElementById('modal-ai-summary').classList.add('modal-active');
+                
+            } catch(err) {
+                console.error("Detalle del error IA:", err);
+                document.getElementById('modal-ai-loading').classList.add('opacity-0', 'pointer-events-none');
+                
+                let errMsg = err.message || 'DESCONOCIDO';
+                if (errMsg.includes('API key not valid')) errMsg = 'Llave API inválida o mal copiada. Revisa los ajustes.';
+                else if (errMsg.includes('Failed to fetch')) errMsg = 'Revisa tu conexión a internet.';
+                else if (errMsg.includes('Unexpected token') || errMsg.includes('JSON')) errMsg = 'La IA no pudo entender la foto. Intenta con una imagen más clara.';
+                else if (errMsg.includes('quota')) errMsg = 'Límite de uso gratuito alcanzado por hoy.';
+                
+                document.getElementById('ai-error-text').textContent = errMsg;
+                document.getElementById('modal-ai-error').classList.add('modal-active');
+            } finally {
+                document.getElementById('camera-input').value = ''; 
+            }
+        }
+
+        function saveAiResultDirectly() {
+            if(!tempAiResult) return;
+
+            const amount = tempAiResult.monto;
+            const detail = tempAiResult.detalle || '';
+            const category = tempAiResult.categoria || 'Otros';
+            
+            const inputDateVal = document.getElementById('in-date').value;
+            const date = inputDateVal ? inputDateVal : new Date().toISOString().split('T')[0];
+
+            const allCats = [...(appData.cats.gasto || [])];
+            const catObj = allCats.find(c => c.n.toLowerCase() === category.toLowerCase());
+            const icon = catObj ? catObj.i : 'ph-fill ph-circle';
+            const color = catObj ? catObj.c : 'text-gray-400';
+            const finalCategoryName = catObj ? catObj.n : category; 
+
+            appData.records.push({
+                id: Date.now(),
+                type: 'gasto',
+                amount: amount,
+                date: date,
+                payDate: '',
+                detail: detail,
+                category: finalCategoryName,
+                status: 'done',
+                icon: icon,
+                color: color,
+                originalDate: date
+            });
+
+            save();
+            closeAllModals();
+            navigate('gastos');
+            showToast('GUARDADO CON ÉXITO');
+            tempAiResult = null;
+        }
+
+        function applyAiResult() {
+            if(!tempAiResult) return;
+            
+            document.getElementById('in-amount-raw').value = tempAiResult.monto;
+            document.getElementById('in-amount-formatted').value = '$ ' + new Intl.NumberFormat('es-CL').format(tempAiResult.monto);
+            document.getElementById('in-detail').value = tempAiResult.detalle || '';
+            
+            if(tempAiResult.categoria) {
+                const catBtns = document.querySelectorAll('#cat-grid .category-btn');
+                for (let btn of catBtns) {
+                    if(btn.innerText.trim().toLowerCase() === tempAiResult.categoria.toLowerCase()) {
+                        btn.click();
+                        break;
+                    }
+                }
+            }
+            
+            closeModal('modal-ai-summary');
+            showToast('EDITA TUS DATOS ANTES DE GUARDAR');
+            tempAiResult = null;
+        }
+
+        function updateCameraState() {
+            const btn = document.getElementById('btn-camera');
+            const icon = document.getElementById('icon-camera');
+            if(!btn || !icon) return;
+            
+            if (navigator.onLine) {
+                icon.className = 'ph-bold ph-camera text-xl text-gray-500 dark:text-gray-300';
+                btn.classList.remove('opacity-30');
+            } else {
+                icon.className = 'ph-bold ph-camera-slash text-xl text-gray-400';
+                btn.classList.add('opacity-30');
+            }
+        }
+        window.addEventListener('online', updateCameraState);
+        window.addEventListener('offline', updateCameraState);
+
+        document.getElementById('main-content').addEventListener('scroll', function(e) {
+            const btn = document.getElementById('btn-scroll-top');
+            if (!btn) return;
+            if (e.target.scrollTop > 300) {
+                btn.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-4');
+                btn.classList.add('opacity-100', 'pointer-events-auto', 'translate-y-0');
+            } else {
+                btn.classList.add('opacity-0', 'pointer-events-none', 'translate-y-4');
+                btn.classList.remove('opacity-100', 'pointer-events-auto', 'translate-y-0');
+            }
+        });
+
+        function scrollToTop() {
+            document.getElementById('main-content').scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function recalculateAbonos() {
+            appData.records.forEach(r => {
+                if(r.type === 'prestamo') {
+                    const abonos = appData.records.filter(a => a.type === 'ingreso' && a.loanId === r.id);
+                    if(abonos.length > 0) {
+                        r.hasAbonos = true;
+                        r.paidAmount = abonos.reduce((sum, a) => sum + a.amount, 0);
+                        r.status = r.paidAmount >= r.amount ? 'paid' : 'pending';
+                    } else if (r.hasAbonos) {
+                        r.hasAbonos = false;
+                        r.paidAmount = 0;
+                        r.status = 'pending';
+                    }
+                }
+            });
+        }
+
+        const save = () => {
+            recalculateAbonos();
+            localStorage.setItem('finanzas_rioluquitas', JSON.stringify(appData));
+        };
+        
+        let curDate = new Date();
+        let curTab = 'dashboard';
+        let curFormMode = 'gasto';
+        let curSelCat = '';
+        let viewGlobalBalance = false;
+        let selectorYear = new Date().getFullYear();
+        let editingId = null;
+
+        const mNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+
+        let ccCurrentTab = 'gasto';
+        let ccSelectedIcon = 'ph-fill ph-star';
+        let ccSelectedColor = 'text-blue-500';
+        let editingCustomCatIdx = null;
+        
+        const ccAllIcons = [
+            { i: 'ph-fill ph-star', t: 'estrella favorito star' },
+            { i: 'ph-fill ph-heart', t: 'corazon amor heart salud' },
+            { i: 'ph-fill ph-car', t: 'auto coche vehiculo transporte car' },
+            { i: 'ph-fill ph-airplane', t: 'avion vuelo viaje transporte airplane' },
+            { i: 'ph-fill ph-bus', t: 'micro bus transporte' },
+            { i: 'ph-fill ph-train', t: 'tren metro transporte' },
+            { i: 'ph-fill ph-bicycle', t: 'bicicleta bici transporte deporte bike' },
+            { i: 'ph-fill ph-boat', t: 'bote barco mar' },
+            { i: 'ph-fill ph-baby', t: 'bebe hijo niño baby familia' },
+            { i: 'ph-fill ph-paw-print', t: 'mascota perro gato animal huella pet' },
+            { i: 'ph-fill ph-game-controller', t: 'juego consola video diversion game' },
+            { i: 'ph-fill ph-monitor', t: 'pc computador pantalla tecnologia monitor' },
+            { i: 'ph-fill ph-music-notes', t: 'musica cancion audio music' },
+            { i: 'ph-fill ph-coffee', t: 'cafe bebida desayuno coffee' },
+            { i: 'ph-fill ph-pizza', t: 'pizza comida rapida alimento' },
+            { i: 'ph-fill ph-hamburger', t: 'hamburguesa comida rapida alimento' },
+            { i: 'ph-fill ph-house', t: 'casa hogar arriendo house' },
+            { i: 'ph-fill ph-pill', t: 'pastilla medicina salud farmacia pill' },
+            { i: 'ph-fill ph-gas-pump', t: 'bencina gasolina combustible gas' },
+            { i: 'ph-fill ph-scissors', t: 'tijeras corte peluqueria' },
+            { i: 'ph-fill ph-film-strip', t: 'cine pelicula video cine film' },
+            { i: 'ph-fill ph-books', t: 'libros lectura educacion books' },
+            { i: 'ph-fill ph-graduation-cap', t: 'estudio universidad colegio educacion school' },
+            { i: 'ph-fill ph-barbell', t: 'gimnasio pesas deporte gym barbell' },
+            { i: 'ph-fill ph-wrench', t: 'herramienta arreglo taller reparacion wrench' },
+            { i: 'ph-fill ph-shopping-bag', t: 'compra bolsa mall tienda shop' }
+        ];
+        
+        let ccFilteredIcons = [...ccAllIcons];
+        const ccColors = ['text-blue-500', 'text-red-500', 'text-orange-500', 'text-emerald-500', 'text-indigo-500', 'text-pink-400', 'text-purple-500', 'text-teal-500', 'text-yellow-500', 'text-gray-400'];
+
+        function openCustomCatsModal() {
+            setCustomCatTab('gasto');
+            cancelEditCustomCat();
+            document.getElementById('modal-custom-cats').classList.add('modal-active');
+        }
+
+        function setCustomCatTab(tab) {
+            ccCurrentTab = tab;
+            document.getElementById('btn-cc-gasto').className = tab === 'gasto' ? "flex-1 py-2.5 text-[10px] font-black rounded-xl transition-all bg-white dark:bg-white/20 shadow-sm" : "flex-1 py-2.5 text-[10px] font-black rounded-xl transition-all opacity-40";
+            document.getElementById('btn-cc-ingreso').className = tab === 'ingreso' ? "flex-1 py-2.5 text-[10px] font-black rounded-xl transition-all bg-white dark:bg-white/20 shadow-sm" : "flex-1 py-2.5 text-[10px] font-black rounded-xl transition-all opacity-40";
+            cancelEditCustomCat();
+            renderCustomCatList();
+        }
+
+        function filterCcIcons() {
+            const q = document.getElementById('cc-icon-search').value.toLowerCase();
+            if(!q) {
+                ccFilteredIcons = [...ccAllIcons];
+            } else {
+                ccFilteredIcons = ccAllIcons.filter(icon => icon.t.includes(q));
+            }
+            renderCcSelectors();
+        }
+
+        function renderCcSelectors() {
+            const iconEl = document.getElementById('cc-icon-sel');
+            if (ccFilteredIcons.length === 0) {
+                iconEl.innerHTML = '<p class="text-[10px] opacity-40 py-2 w-full text-center">No hay iconos con esa palabra</p>';
+            } else {
+                iconEl.innerHTML = ccFilteredIcons.map(iconObj => {
+                    const i = iconObj.i;
+                    return `<button onclick="ccSelectedIcon='${i}'; renderCcSelectors()" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-xl transition-all ${ccSelectedIcon === i ? 'border-[3px] border-themeGreen bg-themeGreen/10 text-themeGreen dark:text-themeGreen-light' : 'border-[3px] border-transparent bg-gray-100 dark:bg-white/5 opacity-50 text-gray-600 dark:text-gray-300'}"><i class="${i}"></i></button>`;
+                }).join('');
+            }
+            
+            const colorEl = document.getElementById('cc-color-sel');
+            colorEl.innerHTML = ccColors.map(c => `<button onclick="ccSelectedColor='${c}'; renderCcSelectors()" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center transition-all ${ccSelectedColor === c ? 'border-[3px] border-themeGreen bg-themeGreen/10' : 'border-[3px] border-transparent bg-gray-100 dark:bg-white/5 opacity-50'}"><div class="w-5 h-5 rounded-full bg-current ${c}"></div></button>`).join('');
+        }
+
+        function renderCustomCatList() {
+            const list = appData.cats[ccCurrentTab] || [];
+            document.getElementById('custom-cat-list').innerHTML = list.map((c, idx) => `
+                <div class="flex justify-between items-center bg-iosCard-light dark:bg-iosCard-dark p-3 rounded-2xl border border-black/5 dark:border-white/5">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-gray-100 dark:bg-white/5 flex items-center justify-center ${c.c}"><i class="${c.i} text-lg"></i></div>
+                        <span class="font-bold text-xs">${c.n}</span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <button onclick="editCustomCat(${idx})" class="w-8 h-8 flex items-center justify-center text-blue-500 opacity-80 active:scale-90"><i class="ph-bold ph-pencil-simple"></i></button>
+                        <button onclick="deleteCustomCat(${idx})" class="w-8 h-8 flex items-center justify-center text-red-500 opacity-80 active:scale-90"><i class="ph-bold ph-trash"></i></button>
+                    </div>
+                </div>
+            `).join('') || '<p class="text-[10px] opacity-40 text-center py-4 uppercase tracking-widest font-black">Sin categorías</p>';
+        }
+
+        function editCustomCat(idx) {
+            editingCustomCatIdx = idx;
+            const cat = appData.cats[ccCurrentTab][idx];
+            document.getElementById('cc-name').value = cat.n;
+            ccSelectedIcon = cat.i;
+            ccSelectedColor = cat.c;
+            
+            document.getElementById('cc-form-title').textContent = 'EDITAR CATEGORÍA';
+            document.getElementById('cc-btn-save').textContent = 'ACTUALIZAR';
+            document.getElementById('cc-btn-cancel').classList.remove('hidden');
+            
+            document.getElementById('cc-icon-search').value = '';
+            filterCcIcons();
+        }
+
+        function cancelEditCustomCat() {
+            editingCustomCatIdx = null;
+            document.getElementById('cc-name').value = '';
+            document.getElementById('cc-icon-search').value = '';
+            ccSelectedIcon = 'ph-fill ph-star';
+            ccSelectedColor = 'text-blue-500';
+            
+            document.getElementById('cc-form-title').textContent = 'CREAR NUEVA';
+            document.getElementById('cc-btn-save').textContent = 'GUARDAR';
+            document.getElementById('cc-btn-cancel').classList.add('hidden');
+            
+            filterCcIcons();
+        }
+
+        function saveCustomCat() {
+            const name = document.getElementById('cc-name').value.trim();
+            if(!name) return showToast('INGRESA UN NOMBRE');
+            
+            if (editingCustomCatIdx !== null) {
+                appData.cats[ccCurrentTab][editingCustomCatIdx] = { n: name, i: ccSelectedIcon, c: ccSelectedColor };
+                showToast('CATEGORÍA ACTUALIZADA');
+            } else {
+                appData.cats[ccCurrentTab].push({ n: name, i: ccSelectedIcon, c: ccSelectedColor });
+                showToast('CATEGORÍA CREADA');
+            }
+            
+            save();
+            cancelEditCustomCat();
+            renderCustomCatList();
+        }
+
+        function deleteCustomCat(idx) {
+            if (appData.cats[ccCurrentTab].length <= 1) {
+                return showToast('DEBES TENER AL MENOS UNA');
+            }
+            appData.cats[ccCurrentTab].splice(idx, 1);
+            save();
+            renderCustomCatList();
+        }
+
+        // --- INICIO LÓGICA DASHBOARD / ANÁLISIS ---
+        function openAnalyticsModal() {
+            closeModal('modal-settings'); // Cierra ajustes para abrir análisis limpiecito
+            
+            const mNombre = mNames[curDate.getMonth()];
+            document.getElementById('analytics-month-name').textContent = mNombre;
+
+            // 1. Filtrar datos del mes actual y mes pasado
+            const currentMonthData = appData.records.filter(r => {
+                const d = new Date(r.date + 'T00:00:00');
+                return d.getMonth() === curDate.getMonth() && d.getFullYear() === curDate.getFullYear();
+            });
+
+            // Restamos 1 mes con precaución de cambio de año
+            let lastMonth = new Date(curDate.getFullYear(), curDate.getMonth() - 1, 1);
+            const pastMonthData = appData.records.filter(r => {
+                const d = new Date(r.date + 'T00:00:00');
+                return d.getMonth() === lastMonth.getMonth() && d.getFullYear() === lastMonth.getFullYear();
+            });
+
+            const statCur = getStats(currentMonthData);
+            const statPast = getStats(pastMonthData);
+
+            // --- RENDER VERSUS CARD ---
+            const versusCard = document.getElementById('analytics-versus-card');
+            if (statPast.g === 0 && statPast.i === 0) {
+                versusCard.innerHTML = `
+                    <div class="w-12 h-12 bg-gray-200 dark:bg-white/10 rounded-full flex items-center justify-center mb-3 text-gray-500"><i class="ph-bold ph-calendar-blank text-2xl"></i></div>
+                    <p class="font-bold text-sm">Sin datos para comparar</p>
+                    <p class="text-[10px] opacity-50 mt-1">Usa la app un mes más para ver el versus.</p>
+                `;
+            } else {
+                const diffGastos = statCur.g - statPast.g;
+                const porcentaje = statPast.g > 0 ? Math.round(Math.abs(diffGastos) / statPast.g * 100) : 100;
+                
+                let bgColor, icon, textColor, titulo, subtitulo;
+                if (diffGastos > 0) {
+                    bgColor = 'bg-red-500/10'; textColor = 'text-red-500'; icon = 'ph-bold ph-trend-up';
+                    titulo = 'Has gastado más';
+                    subtitulo = `Vas gastando ${fmt(Math.abs(diffGastos))} más que el mes pasado.`;
+                } else if (diffGastos < 0) {
+                    bgColor = 'bg-themeGreen/10'; textColor = 'text-themeGreen'; icon = 'ph-bold ph-trend-down';
+                    titulo = 'Estás ahorrando';
+                    subtitulo = `Has gastado ${fmt(Math.abs(diffGastos))} menos que el mes pasado.`;
+                } else {
+                    bgColor = 'bg-gray-200 dark:bg-white/10'; textColor = 'text-gray-600 dark:text-gray-300'; icon = 'ph-bold ph-minus';
+                    titulo = 'Mismo ritmo';
+                    subtitulo = `Llevas el mismo gasto exacto del mes pasado.`;
+                }
+
+                versusCard.innerHTML = `
+                    <div class="w-14 h-14 ${bgColor} ${textColor} rounded-full flex items-center justify-center mb-3"><i class="${icon} text-3xl"></i></div>
+                    <h4 class="font-black text-xl mb-1">${titulo}</h4>
+                    <p class="text-xs font-medium opacity-60 px-4">${subtitulo}</p>
+                    <div class="mt-4 flex gap-4 w-full justify-center">
+                        <div class="flex flex-col">
+                            <span class="text-[8px] uppercase tracking-widest opacity-40 font-bold">${mNames[lastMonth.getMonth()]}</span>
+                            <span class="font-black text-xs">${fmt(statPast.g)}</span>
+                        </div>
+                        <div class="w-px bg-gray-200 dark:bg-white/10"></div>
+                        <div class="flex flex-col">
+                            <span class="text-[8px] uppercase tracking-widest opacity-40 font-bold">${mNombre}</span>
+                            <span class="font-black text-xs">${fmt(statCur.g)}</span>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // --- RENDER BARRAS DE CATEGORÍA (TOP GASTOS) ---
+            const gastosMes = currentMonthData.filter(r => r.type === 'gasto' || (r.type === 'prestamo' && r.status === 'pending'));
+            
+            // Agrupar por categoría
+            const catMap = {};
+            gastosMes.forEach(r => {
+                const nombreCat = r.type === 'prestamo' ? 'Préstamos' : r.category;
+                if (!catMap[nombreCat]) {
+                    catMap[nombreCat] = { total: 0, icon: r.type === 'prestamo' ? 'ph-fill ph-handshake' : (r.icon || 'ph-fill ph-circle'), color: r.type === 'prestamo' ? 'text-amber-500' : (r.color || 'text-themeCafe') };
+                }
+                catMap[nombreCat].total += r.amount;
+            });
+
+            const catArray = Object.keys(catMap).map(k => ({ name: k, ...catMap[k] })).sort((a,b) => b.total - a.total);
+            const totalGastosCategoria = catArray.reduce((acc, c) => acc + c.total, 0);
+
+            const catContainer = document.getElementById('analytics-categories');
+            if (catArray.length === 0) {
+                catContainer.innerHTML = '<p class="text-center py-6 opacity-30 text-xs font-bold uppercase tracking-widest">Sin gastos registrados</p>';
+            } else {
+                // Tomamos solo los Top 5 para no marear
+                const topCats = catArray.slice(0, 5);
+                catContainer.innerHTML = topCats.map(c => {
+                    const pct = Math.round((c.total / totalGastosCategoria) * 100);
+                    // Truco para extraer el color base de la clase tailwind para pintar el fondo de la barra
+                    let bgBarColor = 'bg-themeCafe';
+                    if(c.color.includes('blue')) bgBarColor = 'bg-blue-500';
+                    else if(c.color.includes('red')) bgBarColor = 'bg-red-500';
+                    else if(c.color.includes('orange')) bgBarColor = 'bg-orange-500';
+                    else if(c.color.includes('emerald')) bgBarColor = 'bg-emerald-500';
+                    else if(c.color.includes('indigo')) bgBarColor = 'bg-indigo-500';
+                    else if(c.color.includes('pink')) bgBarColor = 'bg-pink-400';
+                    else if(c.color.includes('purple')) bgBarColor = 'bg-purple-500';
+                    else if(c.color.includes('amber')) bgBarColor = 'bg-amber-500';
+                    else if(c.color.includes('gray')) bgBarColor = 'bg-gray-400';
+
+                    return `
+                        <div>
+                            <div class="flex justify-between items-end mb-1.5">
+                                <div class="flex items-center gap-2">
+                                    <i class="${c.icon} ${c.color} text-lg"></i>
+                                    <span class="font-bold text-xs">${c.name}</span>
+                                </div>
+                                <div class="text-right">
+                                    <span class="font-black text-sm">${fmt(c.total)}</span>
+                                </div>
+                            </div>
+                            <div class="w-full h-1.5 bg-gray-200 dark:bg-white/10 rounded-full overflow-hidden">
+                                <div class="h-full ${bgBarColor} rounded-full" style="width: ${pct}%"></div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            // --- RENDER FLUJO DEL MES ---
+            document.getElementById('analytics-inc-text').textContent = fmt(statCur.i);
+            document.getElementById('analytics-exp-text').textContent = fmt(statCur.g);
+            
+            const barInc = document.getElementById('analytics-bar-inc');
+            const barExp = document.getElementById('analytics-bar-exp');
+            const msgFlow = document.getElementById('analytics-flow-msg');
+            
+            // Resetear para animación
+            barInc.style.width = '0%';
+            barExp.style.width = '0%';
+
+            setTimeout(() => {
+                const totalFlow = statCur.i + statCur.g;
+                if (totalFlow === 0) {
+                    barInc.style.width = '50%';
+                    barExp.style.width = '50%';
+                    barInc.className = "h-full bg-gray-300 dark:bg-white/20 progress-bar-fill";
+                    barExp.className = "h-full bg-gray-200 dark:bg-white/10 progress-bar-fill";
+                    msgFlow.textContent = "Mes sin movimientos aún";
+                } else {
+                    const incPct = (statCur.i / totalFlow) * 100;
+                    const expPct = (statCur.g / totalFlow) * 100;
+                    barInc.style.width = `${incPct}%`;
+                    barExp.style.width = `${expPct}%`;
+                    barInc.className = "h-full bg-themeGreen progress-bar-fill";
+                    barExp.className = "h-full bg-gray-800 dark:bg-gray-400 progress-bar-fill";
+                    
+                    if (statCur.g > statCur.i) {
+                        msgFlow.textContent = "Has gastado más de lo ingresado";
+                        msgFlow.classList.add('text-amber-500');
+                    } else if (statCur.i > 0) {
+                        const ahorrado = statCur.i - statCur.g;
+                        msgFlow.textContent = `Retienes el ${Math.round((ahorrado/statCur.i)*100)}% de tus ingresos`;
+                        msgFlow.classList.remove('text-amber-500');
+                    }
+                }
+            }, 100); // Retraso pequeño para que corra la transición CSS
+
+            // Abrir Modal
+            document.getElementById('modal-analytics').classList.add('modal-active');
+            document.getElementById('overlay').classList.remove('opacity-0', 'pointer-events-none');
+        }
+        // --- FIN LÓGICA DASHBOARD ---
+
+        function initSwipeEvents() {
+            const modales = document.querySelectorAll('.modal-sheet');
+            modales.forEach(m => {
+                m.addEventListener('touchstart', (e) => {
+                    const scrollArea = e.target.closest('.overflow-y-auto');
+                    if (scrollArea && scrollArea.scrollTop > 0) return;
+                    startY = e.touches[0].clientY;
+                    isDragging = true;
+                    currentDraggingModal = m;
+                    m.style.transition = 'none';
+                }, { passive: true });
+
+                m.addEventListener('touchmove', (e) => {
+                    if (!isDragging || !currentDraggingModal) return;
+                    const deltaY = e.touches[0].clientY - startY;
+                    if (deltaY > 0) {
+                        currentDraggingModal.style.transform = `translateY(${deltaY}px)`;
+                        if (e.cancelable) e.preventDefault();
+                    }
+                }, { passive: false });
+
+                m.addEventListener('touchend', (e) => {
+                    if (!isDragging || !currentDraggingModal) return;
+                    isDragging = false;
+                    const deltaY = e.changedTouches[0].clientY - startY;
+                    const modalId = currentDraggingModal.id;
+                    currentDraggingModal.style.transition = 'transform 0.4s cubic-bezier(0.32, 0.72, 0, 1)';
+                    if (deltaY > 120) closeModal(modalId);
+                    else currentDraggingModal.style.transform = 'translateY(0)';
+                    currentDraggingModal = null;
+                }, { passive: true });
+            });
+        }
+
+        function initHorizontalSwipes() {
+            const mainEl = document.getElementById('main-content');
+            let mStartX = 0, mStartY = 0;
+            const mainTabs = ['dashboard', 'ingresos', 'gastos', 'prestamos'];
+
+            mainEl.addEventListener('touchstart', e => {
+                mStartX = e.touches[0].clientX;
+                mStartY = e.touches[0].clientY;
+            }, {passive: true});
+
+            mainEl.addEventListener('touchend', e => {
+                let deltaX = e.changedTouches[0].clientX - mStartX;
+                let deltaY = e.changedTouches[0].clientY - mStartY;
+                
+                if (Math.abs(deltaX) > Math.abs(deltaY) * 1.5 && Math.abs(deltaX) > 60) {
+                    let curIdx = mainTabs.indexOf(curTab);
+                    if (deltaX < 0 && curIdx < mainTabs.length - 1) {
+                        navigate(mainTabs[curIdx + 1], true);
+                    } else if (deltaX > 0 && curIdx > 0) {
+                        navigate(mainTabs[curIdx - 1], true);
+                    }
+                }
+            }, {passive: true});
+
+            const addForm = document.getElementById('add-form');
+            let fStartX = 0, fStartY = 0;
+            const formTabs = ['ingreso', 'gasto', 'prestamo'];
+
+            addForm.addEventListener('touchstart', e => {
+                fStartX = e.touches[0].clientX;
+                fStartY = e.touches[0].clientY;
+            }, {passive: true});
+
+            addForm.addEventListener('touchend', e => {
+                let deltaX = e.changedTouches[0].clientX - fStartX;
+                let deltaY = e.changedTouches[0].clientY - fStartY;
+                
+                if (Math.abs(deltaX) > Math.abs(deltaY) * 1.5 && Math.abs(deltaX) > 50) {
+                    let curIdx = formTabs.indexOf(curFormMode);
+                    if (deltaX < 0 && curIdx < formTabs.length - 1) {
+                        setFormMode(formTabs[curIdx + 1]);
+                    } else if (deltaX > 0 && curIdx > 0) {
+                        setFormMode(formTabs[curIdx - 1]);
+                    }
+                }
+            }, {passive: true});
+        }
+
+        function processOverdueLoans() {
+            const today = new Date().toISOString().split('T')[0];
+            const currentMonth = new Date().getMonth();
+            const currentYear = new Date().getFullYear();
+            let overdue = [];
+            let movedCount = 0;
+
+            appData.records.forEach(r => {
+                if (r.type === 'prestamo' && r.status === 'pending') {
+                    if (r.payDate && r.payDate < today) overdue.push(r);
+                    const rDate = new Date(r.date + 'T00:00:00');
+                    if (rDate.getFullYear() < currentYear || (rDate.getFullYear() === currentYear && rDate.getMonth() < currentMonth)) {
+                        r.originalDate = r.originalDate || r.date; 
+                        r.date = today;
+                        movedCount++;
+                    }
+                }
+            });
+            if (movedCount > 0) save();
+            if (overdue.length > 0) {
+                const listEl = document.getElementById('alert-list');
+                listEl.innerHTML = overdue.map(r => `
+                    <div class="bg-amber-500/5 p-4 rounded-2xl flex justify-between items-center border border-amber-500/10">
+                        <div class="text-left">
+                            <p class="font-black text-sm">${r.category}</p>
+                            <p class="text-[8px] font-bold text-amber-600 uppercase tracking-widest">Venció: ${r.payDate}</p>
+                        </div>
+                        <p class="font-black text-amber-600 dark:text-white">${fmt(r.amount - (r.paidAmount || 0))}</p>
+                    </div>
+                `).join('');
+                document.getElementById('modal-alert').classList.add('modal-active');
+                document.getElementById('overlay').classList.remove('opacity-0', 'pointer-events-none');
+            }
+        }
+
+        const fmt = (n) => new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', minimumFractionDigits: 0 }).format(n);
+
+        function getDashboardRecords() {
+            const currentDateObj = new Date(curDate.getFullYear(), curDate.getMonth(), 1);
+            const oldestDateObj = new Date(curDate.getFullYear(), curDate.getMonth() - loadedPastMonths, 1);
+            
+            return appData.records.filter(r => {
+                const d = new Date(r.date + 'T00:00:00');
+                const rMonth = new Date(d.getFullYear(), d.getMonth(), 1);
+                return rMonth <= currentDateObj && rMonth >= oldestDateObj;
+            }).sort((a, b) => {
+                if (a.date !== b.date) return new Date(b.date) - new Date(a.date);
+                return b.id - a.id;
+            });
+        }
+
+        function hasMorePastRecords() {
+            const oldestLoadedDate = new Date(curDate.getFullYear(), curDate.getMonth() - loadedPastMonths, 1);
+            return appData.records.some(r => {
+                const d = new Date(r.date + 'T00:00:00');
+                const rMonth = new Date(d.getFullYear(), d.getMonth(), 1);
+                return rMonth < oldestLoadedDate;
+            });
+        }
+
+        function loadMoreDashboard() {
+            loadedPastMonths++;
+            const main = document.getElementById('main-content');
+            const oldScrollTop = main.scrollTop;
+            navigate('dashboard');
+            main.scrollTop = oldScrollTop; 
+        }
+
+        function navigate(id, fromTab = false) {
+            curTab = id;
+            document.querySelectorAll('.nav-tab').forEach(t => t.dataset.active = t.dataset.id === id);
+            
+            const main = document.getElementById('main-content');
+            
+            if (fromTab) {
+                loadedPastMonths = 0; 
+                main.classList.remove('fade-enter');
+                void main.offsetWidth; 
+                main.classList.add('fade-enter');
+            }
+
+            const listMonth = appData.records.filter(r => {
+                const d = new Date(r.date + 'T00:00:00');
+                return d.getMonth() === curDate.getMonth() && d.getFullYear() === curDate.getFullYear();
+            });
+            
+            const statsMonth = getStats(listMonth);
+            const statsGlobal = getStats(appData.records);
+
+            if (id === 'dashboard') {
+                const dashData = getDashboardRecords();
+                renderDashboard(main, statsMonth, statsGlobal, dashData);
+            }
+            else if (id === 'prestamos') renderLoans(main, listMonth);
+            else renderList(main, id, listMonth);
+            
+            updateHeader();
+            attachPressEvents();
+        }
+
+        function getStats(data) {
+            return data.reduce((acc, r) => {
+                if(r.type === 'ingreso' || (r.type === 'prestamo' && r.status === 'paid' && !r.hasAbonos)) acc.i += r.amount;
+                if(r.type === 'gasto' || r.type === 'prestamo') acc.g += r.amount;
+                
+                acc.b = acc.i - acc.g;
+                return acc;
+            }, { i: 0, g: 0, b: 0 });
+        }
+
+        function updateHeader() {
+            document.getElementById('header-month').textContent = `${mNames[curDate.getMonth()]} ${curDate.getFullYear()}`;
+        }
+
+        function toggleBalanceMode() {
+            viewGlobalBalance = !viewGlobalBalance;
+            const card = document.getElementById('balance-card');
+            if (viewGlobalBalance) card.classList.add('is-flipped');
+            else card.classList.remove('is-flipped');
+        }
+
+        function renderDashboard(el, sm, sg, data) {
+            let activitiesHtml = '';
+            if (data.length === 0) {
+                activitiesHtml = '<p class="text-center py-10 opacity-30 text-xs italic">Sin registros</p>';
+            } else {
+                let lastMonthStr = '';
+                data.forEach(r => {
+                    const d = new Date(r.date + 'T00:00:00');
+                    const monthStr = mNames[d.getMonth()] + ' ' + d.getFullYear();
+                    
+                    if (monthStr !== lastMonthStr) {
+                        if (lastMonthStr !== '') {
+                            activitiesHtml += `
+                                <div class="flex items-center justify-center pt-4 pb-2 w-full">
+                                    <div class="h-px bg-themeGreen/20 dark:bg-themeGreen-light/20 flex-1"></div>
+                                    <span class="px-4 text-[9px] font-black uppercase tracking-[0.2em] text-themeGreen dark:text-themeGreen-light opacity-60">${monthStr}</span>
+                                    <div class="h-px bg-themeGreen/20 dark:bg-themeGreen-light/20 flex-1"></div>
+                                </div>
+                            `;
+                        }
+                        lastMonthStr = monthStr;
+                    }
+                    activitiesHtml += renderRow(r, 'dashboard');
+                });
+            }
+
+            el.innerHTML = `
+                <div class="mb-6 h-[180px] w-full" style="perspective: 1000px;">
+                    <div id="balance-card" class="flip-card ${viewGlobalBalance ? 'is-flipped' : ''}" onclick="toggleBalanceMode()">
+                        <div class="flip-card-face flip-card-front flex flex-col shadow-xl">
+                            <p class="text-[9px] font-black uppercase opacity-60 tracking-widest mb-1">Balance Mensual</p>
+                            <h2 class="text-3xl font-black mb-5 tracking-tight dark:text-white">${fmt(sm.b)}</h2>
+                            <div class="flex gap-3">
+                                <div class="flex-1 bg-white/10 p-3 rounded-2xl border border-white/5">
+                                    <p class="text-[8px] uppercase font-bold opacity-60">Entradas</p>
+                                    <p class="font-bold text-base dark:text-white">${fmt(sm.i)}</p>
+                                </div>
+                                <div class="flex-1 bg-white/10 p-3 rounded-2xl border border-white/5">
+                                    <p class="text-[8px] uppercase font-bold opacity-60">Salidas</p>
+                                    <p class="font-bold text-base dark:text-white">${fmt(sm.g)}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flip-card-face flip-card-back shadow-xl">
+                            <p class="text-[9px] font-black uppercase opacity-60 tracking-widest mb-1">Balance Global</p>
+                            <h2 class="text-3xl font-black mb-5 tracking-tight dark:text-white">${fmt(sg.b)}</h2>
+                            <div class="flex gap-3">
+                                <div class="flex-1 bg-white/10 p-3 rounded-2xl border border-white/5">
+                                    <p class="text-[8px] uppercase font-bold opacity-60">Entradas Globales</p>
+                                    <p class="font-bold text-base dark:text-white">${fmt(sg.i)}</p>
+                                </div>
+                                <div class="flex-1 bg-white/10 p-3 rounded-2xl border border-white/5">
+                                    <p class="text-[8px] uppercase font-bold opacity-60">Salidas Globales</p>
+                                    <p class="font-bold text-base dark:text-white">${fmt(sg.g)}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex justify-between items-center mb-4 px-1">
+                    <h3 class="text-[9px] font-black uppercase opacity-40 tracking-widest">Todas las actividades</h3>
+                </div>
+                <div class="space-y-2 pb-4 flex flex-col items-center">
+                    ${activitiesHtml}
+                </div>
+                ${hasMorePastRecords() ? `
+                <div class="flex justify-center pb-8 pt-2">
+                    <button onclick="loadMoreDashboard()" class="w-12 h-12 bg-themeGreen/10 text-themeGreen dark:bg-white/10 dark:text-white rounded-full flex items-center justify-center active:scale-90 transition-transform shadow-sm">
+                        <i class="ph-bold ph-plus text-2xl"></i>
+                    </button>
+                </div>` : '<div class="pb-8"></div>'}
+            `;
+        }
+
+        function renderRow(r, context = 'dashboard') {
+            let icon = {i:'ph-fill ph-circle', c:'text-gray-400'};
+            const today = new Date().toISOString().split('T')[0];
+            const isVencido = r.type === 'prestamo' && r.status === 'pending' && r.payDate && r.payDate < today;
+
+            let opacityClass = '';
+            let amountPrefix = '-';
+            let amountColor = 'text-gray-900 dark:text-white';
+            let titlePrefix = '';
+            
+            if (r.type === 'prestamo') {
+                if (context === 'ingresos') {
+                    amountPrefix = '+';
+                    amountColor = 'text-themeGreen dark:text-white';
+                    icon = {i:'ph-fill ph-handshake', c:'text-themeGreen dark:text-white'};
+                    titlePrefix = 'Cobro: ';
+                } else if (context === 'gastos') {
+                    amountPrefix = '-';
+                    amountColor = 'text-gray-900 dark:text-white';
+                    icon = {i:'ph-fill ph-handshake', c:'text-amber-500'};
+                    if (r.status === 'paid') {
+                        opacityClass = 'opacity-40 grayscale';
+                        titlePrefix = '(Cobrado) ';
+                        icon.c = 'text-gray-400';
+                    }
+                } else { 
+                    if (r.status === 'paid') {
+                        amountPrefix = '+';
+                        amountColor = 'text-themeGreen dark:text-white';
+                        icon = {i:'ph-fill ph-handshake', c:'text-themeGreen dark:text-white'};
+                        titlePrefix = 'Cobro: ';
+                    } else {
+                        amountPrefix = '-';
+                        amountColor = 'text-gray-900 dark:text-white';
+                        icon = {i:'ph-fill ph-handshake', c:'text-amber-500'};
+                    }
+                }
+            } else if (r.type === 'ingreso') {
+                amountPrefix = '+';
+                amountColor = 'text-themeGreen dark:text-white';
+                icon = { i: r.icon || 'ph-fill ph-circle', c: r.color || 'text-themeGreen' };
+            } else {
+                amountColor = 'text-gray-900 dark:text-white';
+                icon = { i: r.icon || 'ph-fill ph-circle', c: r.color || 'text-themeCafe' };
+            }
+
+            const isArrastrado = r.originalDate && r.originalDate !== r.date;
+            const dateText = isArrastrado ? 'Desde: ' + r.originalDate : r.date;
+
+            return `
+                <div data-id="${r.id}" class="record-item w-full select-none cursor-pointer bg-iosCard-light dark:bg-iosCard-dark p-4 rounded-2xl flex justify-between items-center border ${isVencido ? 'border-amber-500/50 bg-amber-500/[0.03]' : 'border-black/[0.03] dark:border-white/[0.03]'} active:scale-[0.98] transition-all ${opacityClass}">
+                    <div class="flex items-center gap-3 w-[65%] overflow-hidden">
+                        <div class="w-10 h-10 flex-shrink-0 rounded-xl bg-gray-100 dark:bg-white/5 flex items-center justify-center ${icon.c}"><i class="${icon.i} text-xl"></i></div>
+                        <div class="min-w-0 flex-1">
+                            <p class="text-[11px] font-black tracking-tight truncate">${titlePrefix}${r.category} ${isVencido ? '⚠️' : ''}</p>
+                            <p class="text-[8px] font-bold opacity-30 uppercase tracking-widest">${dateText}</p>
+                        </div>
+                    </div>
+                    <div class="text-right flex-shrink-0">
+                        <p class="font-black text-sm ${amountColor}">${amountPrefix} ${fmt(r.amount)}</p>
+                        ${r.detail ? `<p class="text-[8px] font-bold opacity-30 tracking-tight truncate max-w-[80px] ml-auto">${r.detail}</p>` : ''}
+                    </div>
+                </div>`;
+        }
+
+        function renderLoans(el, listMonth) {
+            const list = appData.records.filter(r => r.type === 'prestamo');
+            
+            const today = new Date().toISOString().split('T')[0];
+            el.innerHTML = `<h2 class="text-2xl font-black mb-6 tracking-tight px-1">Préstamos</h2>
+                <div class="space-y-3 pb-20">
+                    ${list.slice().reverse().map(r => {
+                        const isVencido = r.status === 'pending' && r.payDate && r.payDate < today;
+                        const isArrastrado = r.originalDate && r.originalDate !== r.date;
+                        const dateText = isArrastrado ? 'Desde: ' + r.originalDate : r.date;
+                        
+                        const paidSoFar = r.paidAmount || 0;
+                        const remaining = r.amount - paidSoFar;
+                        const hasAbonos = r.hasAbonos && paidSoFar > 0;
+                        
+                        const amountDisplay = hasAbonos && r.status === 'pending' 
+                            ? `<p class="font-black text-base text-gray-900 dark:text-white">${fmt(remaining)}</p><p class="text-[9px] font-bold opacity-40 uppercase tracking-widest mt-0.5">DE ${fmt(r.amount)}</p>` 
+                            : `<p class="font-black text-base ${r.status==='paid'?'text-themeGreen dark:text-white':'text-gray-900 dark:text-white'}">${fmt(r.amount)}</p>`;
+                        
+                        const abonoBadge = hasAbonos && r.status === 'pending'
+                            ? `<p class="text-[9px] text-themeGreen font-black mt-1 bg-themeGreen/10 inline-block px-2 py-0.5 rounded uppercase tracking-widest">Abonado: ${fmt(paidSoFar)}</p>`
+                            : '';
+
+                        return `
+                        <div data-id="${r.id}" class="record-item select-none cursor-pointer bg-iosCard-light dark:bg-iosCard-dark p-5 rounded-3xl border ${isVencido ? 'border-amber-500 bg-amber-500/5' : 'border-black/[0.03] dark:border-white/[0.03]'} ${r.status==='paid'?'opacity-40 grayscale':''}">
+                            <div class="flex justify-between items-center ${r.status==='pending'?'mb-4':''}">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center font-bold text-xs"><i class="ph-fill ph-user text-lg"></i></div>
+                                    <div>
+                                        <p class="font-black text-sm">${r.category}</p>
+                                        <div class="flex gap-2">
+                                            <p class="text-[8px] opacity-40 font-black uppercase tracking-widest">${dateText}</p>
+                                            ${r.payDate ? `<p class="text-[8px] font-black uppercase tracking-widest ${isVencido?'text-red-500':'text-amber-500 opacity-60'}">Vence: ${r.payDate}</p>` : ''}
+                                        </div>
+                                        ${abonoBadge}
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    ${amountDisplay}
+                                </div>
+                            </div>
+                            ${r.status === 'pending' ? `
+                            <div class="flex gap-2">
+                                <button onclick="cobrarTodo(${r.id})" id="btn-cobrar-todo-${r.id}" class="ignore-press flex-1 py-3.5 bg-themeGreen text-white rounded-xl font-black text-[9px] uppercase tracking-widest shadow-sm transition-all flex items-center justify-center gap-2">COBRAR TODO</button>
+                                <button onclick="openAbonoModal(${r.id})" class="ignore-press flex-[0.7] py-3.5 bg-themeGreen/10 text-themeGreen dark:bg-themeGreen/20 dark:text-themeGreen-light rounded-xl font-black text-[9px] uppercase tracking-widest shadow-sm transition-all">ABONAR</button>
+                            </div>` : ''}
+                        </div>`}).join('') || '<p class="text-center py-20 opacity-30 text-xs italic">Sin préstamos</p>'}
+                </div>`;
+        }
+
+        function renderList(el, tab, data) {
+            const isIngreso = tab === 'ingresos';
+            const filtered = data.filter(r => isIngreso ? (r.type === 'ingreso' || (r.type === 'prestamo' && r.status === 'paid')) : (r.type === 'gasto' || r.type === 'prestamo'));
+            
+            el.innerHTML = `
+                <div class="bg-iosCard-light dark:bg-iosCard-dark p-8 rounded-3xl text-center mb-6 border border-black/[0.03] dark:border-white/[0.03]">
+                    <p class="text-[9px] font-black opacity-40 uppercase tracking-widest mb-1">${isIngreso ? 'INGRESOS TOTALES' : 'GASTOS TOTALES'}</p>
+                    <h2 class="text-3xl font-black ${isIngreso ? 'text-themeGreen dark:text-white' : 'text-themeCafe dark:text-white'}">${fmt(filtered.reduce((s,r) => s + r.amount, 0))}</h2>
+                </div>
+                <div class="space-y-2 pb-10 w-full flex flex-col items-center">
+                    ${filtered.slice().reverse().map(r => renderRow(r, tab)).join('') || '<p class="text-center py-10 opacity-30 text-xs italic">Sin registros</p>'}
+                </div>`;
+        }
+
+        let currentAbonoLoanId = null;
+        
+        function openAbonoModal(id) {
+            currentAbonoLoanId = id;
+            const r = appData.records.find(x => x.id === id);
+            const remaining = r.amount - (r.paidAmount || 0);
+            
+            document.getElementById('abono-subtitle').textContent = `Faltan ${fmt(remaining)}`;
+            document.getElementById('abono-amount-formatted').value = '';
+            document.getElementById('abono-amount-raw').value = '';
+            
+            const btn = document.getElementById('btn-submit-abono');
+            btn.innerHTML = `<span id="abono-btn-text">Guardar Abono</span>`;
+            
+            document.getElementById('modal-abono').classList.add('modal-active');
+            document.getElementById('overlay').classList.remove('opacity-0', 'pointer-events-none');
+        }
+
+        function processAbono() {
+            if(document.activeElement) document.activeElement.blur();
+            const r = appData.records.find(x => x.id === currentAbonoLoanId);
+            const abonoRaw = parseInt(document.getElementById('abono-amount-raw').value, 10);
+            if(isNaN(abonoRaw) || abonoRaw <= 0) return showToast('INGRESA UN MONTO');
+            
+            const remaining = r.amount - (r.paidAmount || 0);
+            const actualAbono = Math.min(abonoRaw, remaining);
+
+            appData.records.push({
+                id: Date.now(),
+                loanId: r.id, 
+                type: 'ingreso',
+                amount: actualAbono,
+                date: new Date().toISOString().split('T')[0], 
+                detail: `Abono de préstamo`,
+                category: `Cobro: ${r.category}`,
+                status: 'done',
+                icon: 'ph-fill ph-handshake',
+                color: 'text-themeGreen',
+                originalDate: new Date().toISOString().split('T')[0]
+            });
+
+            const btn = document.getElementById('btn-submit-abono');
+            btn.innerHTML = `<i class="ph-bold ph-check text-2xl"></i>`;
+            btn.classList.add('bounce-check');
+            
+            setTimeout(() => {
+                btn.classList.remove('bounce-check');
+                save(); 
+                closeModal('modal-abono');
+                navigate('prestamos');
+                showToast(actualAbono === remaining ? 'PRÉSTAMO PAGADO' : 'ABONO GUARDADO');
+            }, 500);
+        }
+
+        function cobrarTodo(id) {
+            const btn = document.getElementById(`btn-cobrar-todo-${id}`);
+            btn.innerHTML = `<i class="ph-bold ph-check text-xl"></i>`;
+            btn.classList.add('bounce-check');
+            
+            setTimeout(() => {
+                const r = appData.records.find(x => x.id === id);
+                const remaining = r.amount - (r.paidAmount || 0);
+                
+                appData.records.push({
+                    id: Date.now(),
+                    loanId: r.id,
+                    type: 'ingreso',
+                    amount: remaining,
+                    date: new Date().toISOString().split('T')[0],
+                    detail: `Pago de préstamo`,
+                    category: `Cobro: ${r.category}`,
+                    status: 'done',
+                    icon: 'ph-fill ph-handshake',
+                    color: 'text-themeGreen',
+                    originalDate: new Date().toISOString().split('T')[0]
+                });
+                
+                save();
+                navigate('prestamos');
+                showToast('COBRADO');
+            }, 500);
+        }
+
+        function closeModal(id) {
+            if(document.activeElement) document.activeElement.blur(); 
+            const m = document.getElementById(id);
+            if (!m) return;
+            m.classList.remove('modal-active');
+            m.style.transform = '';
+            setTimeout(() => {
+                const activeModals = document.querySelectorAll('.modal-active');
+                if (activeModals.length === 0) document.getElementById('overlay').classList.add('opacity-0', 'pointer-events-none');
+            }, 100);
+        }
+
+        function closeAllModals(keepOverlay = false) {
+            if(document.activeElement) document.activeElement.blur(); 
+            document.querySelectorAll('.modal-sheet').forEach(m => {
+                m.classList.remove('modal-active');
+                m.style.transform = '';
+            });
+            if(!keepOverlay) {
+                document.getElementById('overlay').classList.add('opacity-0', 'pointer-events-none');
+            }
+        }
+
+        function openAddModal() {
+            editingId = null;
+            document.getElementById('btn-submit-form').textContent = 'Guardar Registro';
+            setFormMode(curTab === 'ingresos' ? 'ingreso' : (curTab === 'prestamos' ? 'prestamo' : 'gasto'));
+            document.getElementById('add-form').reset();
+            document.getElementById('in-amount-formatted').value = '';
+            document.getElementById('in-amount-raw').value = '';
+            
+            const now = new Date();
+            if (curDate.getMonth() === now.getMonth() && curDate.getFullYear() === now.getFullYear()) {
+                document.getElementById('display-date').textContent = 'Hoy';
+                document.getElementById('in-date').value = new Date().toISOString().split('T')[0];
+            } else {
+                document.getElementById('display-date').textContent = `1 ${mNames[curDate.getMonth()].substring(0,3)}`;
+                const yyyy = curDate.getFullYear();
+                const mm = String(curDate.getMonth() + 1).padStart(2, '0');
+                document.getElementById('in-date').value = `${yyyy}-${mm}-01`;
+            }
+            
+            updateCameraState();
+            
+            document.getElementById('modal-add').classList.add('modal-active');
+            document.getElementById('overlay').classList.remove('opacity-0', 'pointer-events-none');
+        }
+
+        function setFormMode(mode, preselectCat = '') {
+            curFormMode = mode; curSelCat = preselectCat;
+            ['ingreso', 'gasto', 'prestamo'].forEach(m => {
+                const b = document.getElementById('btn-'+m);
+                b.className = m === mode ? "flex-1 py-2.5 text-[10px] font-black rounded-xl bg-white dark:bg-white/20 shadow-sm" : "flex-1 py-2.5 text-[10px] font-black rounded-xl opacity-40";
+            });
+            const grid = document.getElementById('cat-grid');
+            const catBox = document.getElementById('cat-box');
+            const pField = document.getElementById('person-field');
+            const payBox = document.getElementById('paydate-box');
+            const detailBox = document.getElementById('detalle-box');
+            
+            const cameraBtn = document.getElementById('btn-camera');
+            if (cameraBtn) {
+                cameraBtn.style.display = mode === 'gasto' ? 'flex' : 'none';
+            }
+
+            grid.innerHTML = '';
+            if(mode === 'prestamo') { 
+                catBox.classList.add('hidden'); pField.classList.remove('hidden'); payBox.classList.remove('hidden'); detailBox.classList.add('hidden');
+            } else {
+                catBox.classList.remove('hidden'); pField.classList.add('hidden'); payBox.classList.add('hidden'); detailBox.classList.remove('hidden');
+                
+                const combinedCats = appData.cats[mode] || [];
+                
+                combinedCats.forEach((c, idx) => {
+                    const b = document.createElement('button'); b.type = 'button';
+                    b.className = "category-btn flex flex-col items-center gap-1.5 p-4 rounded-2xl bg-gray-200/50 dark:bg-white/5 transition-all text-gray-500 dark:text-gray-300";
+                    b.onclick = () => { 
+                        curSelCat = c.n; document.querySelectorAll('.category-btn').forEach(x => x.classList.remove('ring-2', 'ring-themeGreen', 'bg-themeGreen/10', 'dark:bg-themeGreen/20', 'scale-[0.98]'));
+                        b.classList.add('ring-2', 'ring-themeGreen', 'bg-themeGreen/10', 'dark:bg-themeGreen/20', 'scale-[0.98]');
+                    };
+                    b.innerHTML = `<i class="${c.i} text-2xl ${c.c}"></i><span class="text-[7px] font-black uppercase text-center">${c.n}</span>`;
+                    grid.appendChild(b);
+                    if (preselectCat && c.n === preselectCat) b.click(); else if (!preselectCat && idx === 0) b.click();
+                });
+            }
+        }
+
+        function attachPressEvents() {
+            const items = document.querySelectorAll('.record-item');
+            items.forEach(item => {
+                const id = parseInt(item.dataset.id);
+                let timer;
+                let isDrag = false;
+                const start = () => { isDrag = false; timer = setTimeout(() => { isDrag = true; if('vibrate' in navigator) navigator.vibrate(50); editRecord(id); }, 500); };
+                const move = () => { isDrag = true; clearTimeout(timer); };
+                const end = (e) => { clearTimeout(timer); if (!isDrag && !e.target.closest('button.ignore-press')) openDetailsModal(id); };
+                item.addEventListener('touchstart', start, {passive: true});
+                item.addEventListener('touchmove', move, {passive: true});
+                item.addEventListener('touchend', end);
+                item.addEventListener('mousedown', start);
+                item.addEventListener('mouseup', end);
+            });
+        }
+
+        function openDetailsModal(id) {
+            const r = appData.records.find(x => x.id === id); if(!r) return;
+            const isPaidPrestamo = r.type === 'prestamo' && r.status === 'paid';
+            const isOut = r.type === 'gasto' || (r.type === 'prestamo' && r.status === 'pending');
+            
+            const icon = r.type === 'prestamo' ? {i:'ph-fill ph-handshake', c: isPaidPrestamo ? 'text-themeGreen' : 'text-amber-500'} : {i: r.icon || 'ph-fill ph-circle', c: r.color || 'text-gray-400'};
+            
+            document.getElementById('detail-icon').className = icon.i;
+            document.getElementById('detail-icon-container').className = `w-20 h-20 rounded-full flex items-center justify-center mb-4 text-4xl bg-gray-100 dark:bg-white/5 ${icon.c}`;
+            
+            const dateToUse = r.originalDate || r.date;
+            
+            if (r.type === 'prestamo') {
+                document.getElementById('detail-category').textContent = `Prestado a ${r.category}${isPaidPrestamo ? ' (COBRADO)' : ''}`;
+                const [oy, om, od] = dateToUse.split('-'); 
+                document.getElementById('detail-date').textContent = `Desde: ${parseInt(od)} de ${mNames[parseInt(om)-1]}`;
+            } else {
+                document.getElementById('detail-category').textContent = r.category;
+                const [y, m, d] = dateToUse.split('-'); 
+                document.getElementById('detail-date').textContent = `${parseInt(d)} de ${mNames[parseInt(m)-1]} ${y}`;
+            }
+
+            document.getElementById('detail-amount').className = `text-4xl font-black tracking-tight mb-6 ${isPaidPrestamo ? 'text-themeGreen' : (!isOut ? 'text-themeGreen' : 'text-gray-900 dark:text-white')}`;
+            document.getElementById('detail-amount').textContent = (isPaidPrestamo ? '+' : (!isOut ? '+' : '-')) + ' ' + fmt(r.amount);
+            
+            const textCont = document.getElementById('detail-text-container');
+            if(r.detail && r.detail.trim() !== '') { textCont.classList.remove('hidden'); document.getElementById('detail-text').textContent = r.detail; } else { textCont.classList.add('hidden'); }
+            document.getElementById('btn-edit-detail').onclick = () => editRecord(id);
+            document.getElementById('btn-delete-detail').onclick = () => deleteRecord(id);
+            document.getElementById('modal-details').classList.add('modal-active');
+            document.getElementById('overlay').classList.remove('opacity-0', 'pointer-events-none');
+        }
+
+        function editRecord(id) {
+            closeAllModals(true);
+            const r = appData.records.find(x => x.id === id); if(!r) return;
+            editingId = id;
+            setFormMode(r.type, r.category);
+            document.getElementById('in-amount-raw').value = r.amount;
+            document.getElementById('in-amount-formatted').value = '$ ' + new Intl.NumberFormat('es-CL').format(r.amount);
+            
+            const dateToUse = r.originalDate || r.date;
+            document.getElementById('in-date').value = dateToUse;
+            const [y, m, d] = dateToUse.split('-'); document.getElementById('display-date').textContent = `${parseInt(d)} ${mNames[parseInt(m)-1].substring(0,3)}`;
+            
+            if(r.type === 'prestamo') {
+                document.getElementById('in-person').value = r.category;
+                if(r.payDate) {
+                    document.getElementById('in-pay-date').value = r.payDate;
+                    const [py, pm, pd] = r.payDate.split('-'); document.getElementById('display-pay-date').textContent = `${parseInt(pd)} ${mNames[parseInt(pm)-1].substring(0,3)}`;
+                }
+            } else { document.getElementById('in-detail').value = r.detail || ''; }
+            document.getElementById('btn-submit-form').textContent = 'Actualizar Registro';
+            setTimeout(() => { document.getElementById('modal-add').classList.add('modal-active'); }, 50);
+        }
+
+        function deleteRecord(id) {
+            appData.records = appData.records.filter(r => r.id !== id);
+            appData.records = appData.records.filter(r => r.loanId !== id);
+            save(); closeAllModals(); showToast('ELIMINADO'); navigate(curTab);
+        }
+
+        function openGlobalMonthSelector() {
+            selectorYear = curDate.getFullYear();
+            renderGlobalMonthGrid();
+            document.getElementById('modal-month-selector').classList.add('modal-active');
+            document.getElementById('overlay').classList.remove('opacity-0', 'pointer-events-none');
+        }
+
+        function renderGlobalMonthGrid() {
+            const grid = document.getElementById('month-grid-selector');
+            grid.innerHTML = '';
+            mNames.forEach((n, i) => {
+                const isSel = curDate.getMonth() === i && curDate.getFullYear() === selectorYear;
+                
+                const hasData = appData.records.some(r => {
+                    const rDate = new Date(r.date + 'T00:00:00');
+                    return rDate.getMonth() === i && rDate.getFullYear() === selectorYear;
+                });
+                
+                let btnClass = '';
+                if (isSel) {
+                    btnClass = 'bg-themeGreen text-white shadow-lg';
+                } else if (hasData) {
+                    btnClass = 'bg-themeGreen/15 text-themeGreen dark:bg-themeGreen/20 dark:text-themeGreen-light opacity-100';
+                } else {
+                    btnClass = 'bg-gray-100 dark:bg-white/5 opacity-60';
+                }
+
+                grid.innerHTML += `<button onclick="setGlobalMonth(${i})" class="py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${btnClass}">${n.substring(0,3)}</button>`;
+            });
+            document.getElementById('selector-year').textContent = selectorYear;
+        }
+
+        function setGlobalMonth(m) {
+            curDate = new Date(selectorYear, m, 1);
+            loadedPastMonths = 0;
+            closeAllModals(); navigate(curTab);
+        }
+
+        function changeYearGlobal(delta) {
+            selectorYear += delta;
+            renderGlobalMonthGrid();
+        }
+
+        function goToCurrentMonth() {
+            const now = new Date();
+            curDate = new Date(now.getFullYear(), now.getMonth(), 1);
+            loadedPastMonths = 0;
+            closeAllModals();
+            navigate(curTab);
+            showToast('VISTA ACTUALIZADA');
+        }
+
+        let dpTargetId = '';
+        function openDatePicker(tid) { dpTargetId = tid; renderDP(); document.getElementById('modal-datepicker').classList.add('modal-active'); }
+        function renderDP() {
+            const grid = document.getElementById('datepicker-grid'); grid.innerHTML = '';
+            const y = curDate.getFullYear(); const m = curDate.getMonth();
+            document.getElementById('cal-month-title').textContent = `${mNames[m]} ${y}`;
+            const first = new Date(y, m, 1).getDay(); const days = new Date(y, m+1, 0).getDate();
+            const currentSelected = document.getElementById(dpTargetId).value;
+            const selD = currentSelected ? parseInt(currentSelected.split('-')[2]) : 0;
+            const selM = currentSelected ? parseInt(currentSelected.split('-')[1]) - 1 : -1;
+            for(let i=0; i<first; i++) grid.innerHTML += `<div></div>`;
+            for(let d=1; d<=days; d++) {
+                const isSelected = d === selD && m === selM;
+                grid.innerHTML += `<button type="button" onclick="setDP(${d})" class="day-btn ${isSelected ? 'selected' : 'text-gray-900 dark:text-white'}">${d}</button>`;
+            }
+        }
+        function setDP(d) {
+            const iso = `${curDate.getFullYear()}-${(curDate.getMonth()+1).toString().padStart(2,'0')}-${d.toString().padStart(2,'0')}`;
+            document.getElementById(dpTargetId).value = iso;
+            const label = dpTargetId === 'in-date' ? 'display-date' : 'display-pay-date';
+            document.getElementById(label).textContent = `${d} ${mNames[curDate.getMonth()].substring(0,3)}`;
+            closeModal('modal-datepicker');
+        }
+        function setTodayDP() { const now = new Date(); curDate = new Date(now.getFullYear(), now.getMonth(), 1); setDP(now.getDate()); }
+        function moveCalMonth(d) { curDate.setMonth(curDate.getMonth() + d); renderDP(); }
+
+        document.getElementById('add-form').onsubmit = (e) => {
+            e.preventDefault();
+            if(document.activeElement) document.activeElement.blur(); 
+
+            const amount = parseInt(document.getElementById('in-amount-raw').value, 10);
+            const date = document.getElementById('in-date').value;
+            const payDate = document.getElementById('in-pay-date').value;
+            const detail = document.getElementById('in-detail').value;
+            const category = curFormMode === 'prestamo' ? document.getElementById('in-person').value : curSelCat;
+            
+            if(!category || isNaN(amount)) return showToast('COMPLETAR DATOS');
+
+            const allCats = [...(appData.cats.gasto || []), ...(appData.cats.ingreso || [])];
+            const catObj = allCats.find(c => c.n === category);
+            const icon = catObj ? catObj.i : 'ph-fill ph-circle';
+            const color = catObj ? catObj.c : 'text-gray-400';
+
+            if (editingId) {
+                const idx = appData.records.findIndex(r => r.id === editingId);
+                if(idx !== -1) appData.records[idx] = { ...appData.records[idx], type: curFormMode, amount, date, payDate, detail, category, icon, color, originalDate: date };
+                showToast('ACTUALIZADO');
+            } else {
+                appData.records.push({ id: Date.now(), type: curFormMode, amount, date, payDate, detail, category, status: curFormMode === 'prestamo' ? 'pending' : 'done', icon, color, originalDate: date });
+                showToast('GUARDADO');
+            }
+            save(); closeAllModals(); navigate(curFormMode + 's');
+        };
+
+        function toggleDarkMode() { appData.settings.dark = !appData.settings.dark; applyTheme(); save(); }
+        function applyTheme() { 
+            if(appData.settings.dark) document.documentElement.classList.add('dark'); 
+            else document.documentElement.classList.remove('dark'); 
+            
+            const t = appData.settings.colorTheme || 'classic';
+            const c = appData.settings.customColors || PRESET_THEMES.classic;
+            applyColorTheme(t, c);
+        }
+        function openSettings() { document.getElementById('modal-settings').classList.add('modal-active'); document.getElementById('overlay').classList.remove('opacity-0', 'pointer-events-none'); }
+        
+        function showToast(m, duration = 2000) { 
+            const t = document.getElementById('toast'); t.textContent = m; t.classList.remove('opacity-0', '-translate-y-10'); t.classList.add('opacity-100', 'translate-y-0'); 
+            setTimeout(() => { t.classList.add('opacity-0', '-translate-y-10'); t.classList.remove('opacity-100', 'translate-y-0'); }, duration); 
+        }
+        
+        function exportData() { 
+            const blob = new Blob([JSON.stringify(appData)], {type:'application/json'}); 
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `backup.json`; a.click(); 
+        }
+
+        document.getElementById('import-input').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                try {
+                    const data = JSON.parse(evt.target.result);
+                    if(data.records) {
+                        appData = data;
+                        if (!appData.settings) appData.settings = { dark: false, apiKey: '', colorTheme: 'classic' };
+                        if (!appData.cats) {
+                            appData.cats = {
+                                gasto: [...defaultCats.gasto, ...(appData.customCats?.gasto || [])],
+                                ingreso: [...defaultCats.ingreso, ...(appData.customCats?.ingreso || [])]
+                            };
+                        }
+                        save();
+                        applyTheme();
+                        loadedPastMonths = 0;
+                        closeAllModals();
+                        navigate('dashboard');
+                        showToast('IMPORTADO CORRECTAMENTE');
+                    }
+                } catch(err) {
+                    showToast('ERROR AL IMPORTAR');
+                }
+            };
+            reader.readAsText(file);
+        });
+
+        function clearAllData() {
+            if(confirm('¿Estás seguro de que quieres eliminar TODOS los registros? Esta acción no se puede deshacer.')) {
+                appData.records = [];
+                loadedPastMonths = 0;
+                save();
+                closeAllModals();
+                navigate('dashboard');
+                showToast('DATOS BORRADOS');
+            }
+        }
+
+        document.getElementById('in-amount-formatted').addEventListener('input', (e) => {
+            let val = e.target.value.replace(/\D/g, ''); 
+            if (val === '') { document.getElementById('in-amount-raw').value = ''; e.target.value = ''; return; }
+            document.getElementById('in-amount-raw').value = val;
+            e.target.value = '$ ' + new Intl.NumberFormat('es-CL').format(val);
+        });
+        
+        document.getElementById('abono-amount-formatted').addEventListener('input', (e) => {
+            let val = e.target.value.replace(/\D/g, ''); 
+            if (val === '') { document.getElementById('abono-amount-raw').value = ''; e.target.value = ''; return; }
+            document.getElementById('abono-amount-raw').value = val;
+            e.target.value = '$ ' + new Intl.NumberFormat('es-CL').format(val);
+        });
+
+        window.onload = () => { 
+            applyTheme(); 
+            navigate('dashboard'); 
+            initSwipeEvents(); 
+            initHorizontalSwipes();
+            updateCameraState();
+            setTimeout(processOverdueLoans, 800);
+        };
+    </script>
+</body>
+</html>
