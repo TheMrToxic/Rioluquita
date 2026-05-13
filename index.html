@@ -297,7 +297,7 @@
             </button>
             <div class="relative w-[20%] h-full flex justify-center">
                 <button onclick="openAddModal()" class="absolute -top-6 w-14 h-14 bg-themeGreen text-white rounded-full shadow-lg flex items-center justify-center active:scale-90 transition-transform border-[4px] border-iosBg-light dark:border-iosBg-dark">
-                    <i class="ph ph-plus text-2xl font-bold"></i>
+                    <i class="ph-bold ph-plus text-[26px]"></i>
                 </button>
             </div>
             <button onclick="navigate('gastos', true)" class="nav-tab flex flex-col items-center justify-center w-[18%] text-gray-400 dark:text-gray-500 data-[active=true]:text-themeCafe" data-id="gastos">
@@ -1079,11 +1079,12 @@
         let appData = JSON.parse(localStorage.getItem('finanzas_rioluquitas'));
         
         if (!appData) {
-            appData = { records: [], settings: { dark: false, apiKey: '', aiVoice: true, aiCamera: true, colorTheme: 'classic', appName: 'Rioluquitas', font: 'sans' }, cats: JSON.parse(JSON.stringify(defaultCats)) };
+            appData = { records: [], settings: { dark: false, apiKey: '', aiVoice: true, aiCamera: true, colorTheme: 'classic', appName: 'Rioluquitas', font: 'sans', privacyMode: false }, cats: JSON.parse(JSON.stringify(defaultCats)) };
         } else {
-            if (!appData.settings) appData.settings = { dark: false, apiKey: '', aiVoice: true, aiCamera: true, colorTheme: 'classic', appName: 'Rioluquitas', font: 'sans' };
+            if (!appData.settings) appData.settings = { dark: false, apiKey: '', aiVoice: true, aiCamera: true, colorTheme: 'classic', appName: 'Rioluquitas', font: 'sans', privacyMode: false };
             if (appData.settings.aiVoice === undefined) appData.settings.aiVoice = true;
             if (appData.settings.aiCamera === undefined) appData.settings.aiCamera = true;
+            if (appData.settings.privacyMode === undefined) appData.settings.privacyMode = false;
             if (!appData.settings.appName) appData.settings.appName = 'Rioluquitas'; 
             if (!appData.settings.font) appData.settings.font = 'sans';
             if (!appData.cats) {
@@ -1114,9 +1115,17 @@
             showToast('NOMBRE ACTUALIZADO');
         }
 
-        function openApiModal() {
-            document.getElementById('api-key-input').value = appData.settings.apiKey || '';
-            updateAiTogglesUI();
+        // --- SISTEMA MODO PRIVACIDAD ---
+        function togglePrivacyMode() {
+            appData.settings.privacyMode = !appData.settings.privacyMode;
+            save();
+            navigate(curTab); 
+            showToast(appData.settings.privacyMode ? 'MODO OCULTO ACTIVADO' : 'MODO OCULTO DESACTIVADO');
+            // Seguro para evitar clics accidentales después de cambiar la vista
+            setTimeout(() => { blockCardClick = false; }, 300);
+        }
+
+        function updatePrivacyIcon() {
             document.getElementById('modal-api-key').classList.add('modal-active');
             document.getElementById('overlay').classList.remove('opacity-0', 'pointer-events-none');
         }
@@ -1157,7 +1166,7 @@
             showToast('LLAVE GUARDADA');
         }
 
-        // --- SISTEMA DE RECONOCIMIENTO DE VOZ (NUEVO) ---
+        // --- SISTEMA DE RECONOCIMIENTO DE VOZ ---
         let recognition = null;
         let isListening = false;
 
@@ -1204,7 +1213,6 @@
                     const finalRecordedText = document.getElementById('listening-text').textContent;
                     
                     if (finalRecordedText && finalRecordedText !== 'Escuchando...' && !finalRecordedText.includes('Ej: "Gasté')) {
-                        // Procesamos el texto automáticamente al detenerse el audio
                         document.getElementById('modal-ai-loading').classList.remove('opacity-0', 'pointer-events-none');
                         sendToGeminiUnified(null, finalRecordedText);
                     }
@@ -1234,7 +1242,7 @@
             if (recognition && isListening) recognition.stop();
         }
 
-        // --- SISTEMA DE FOTO (EXISTENTE) ---
+        // --- SISTEMA DE FOTO ---
         function triggerCamera() {
             if (!navigator.onLine) return showToast('SIN CONEXIÓN A INTERNET', 3000);
             if (!appData.settings.apiKey) return showToast('FALTA LLAVE DE IA EN AJUSTES', 3000);
@@ -1376,7 +1384,7 @@
         function saveAiResultDirectly() {
             if(!tempAiResult) return;
 
-            const tipoT = tempAiResult.tipo; // ingreso, gasto, prestamo
+            const tipoT = tempAiResult.tipo; 
             const amount = tempAiResult.monto;
             const detail = tempAiResult.detalle || '';
             const category = tempAiResult.categoria || 'Otros';
@@ -1388,7 +1396,6 @@
             let color = 'text-gray-400';
             let finalCategoryName = category;
 
-            // Solo buscar categoría si NO es préstamo
             if (tipoT !== 'prestamo') {
                 const allCats = [...(appData.cats[tipoT] || [])];
                 const catObj = allCats.find(c => c.n.toLowerCase() === category.toLowerCase());
@@ -1406,7 +1413,7 @@
                 date: date,
                 payDate: '', 
                 detail: detail,
-                category: finalCategoryName, // En préstamo es la persona
+                category: finalCategoryName,
                 status: tipoT === 'prestamo' ? 'pending' : 'done',
                 icon: icon,
                 color: color,
@@ -1415,7 +1422,7 @@
 
             save();
             closeAllModals();
-            navigate(tipoT + 's'); // Navega a 'gastos', 'ingresos' o 'prestamos' inteligentemente
+            navigate(tipoT + 's'); 
             showToast('GUARDADO CON ÉXITO');
             tempAiResult = null;
         }
@@ -1423,7 +1430,6 @@
         function applyAiResult() {
             if(!tempAiResult) return;
             
-            // Cambiar automáticamente el formulario a lo que dijo la IA
             setFormMode(tempAiResult.tipo, tempAiResult.categoria);
             
             document.getElementById('in-amount-raw').value = tempAiResult.monto;
@@ -2153,7 +2159,26 @@
             }
         }
 
-        const fmt = (n) => new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', minimumFractionDigits: 0 }).format(n);
+        // --- SISTEMA CENTRAL DE FORMATEO Y PRIVACIDAD ---
+        const fmt = (n) => {
+            if (appData.settings && appData.settings.privacyMode) return '$ ***.***';
+            return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', minimumFractionDigits: 0 }).format(n);
+        };
+
+        // --- GENERADOR DE AVATARES DE COLORES PARA PERSONAS ---
+        function getAvatarData(name) {
+            if (!name) name = '?';
+            const colors = ['bg-red-500', 'bg-blue-500', 'bg-emerald-500', 'bg-amber-500', 'bg-purple-500', 'bg-pink-500', 'bg-indigo-500', 'bg-teal-500', 'bg-orange-500', 'bg-cyan-600', 'bg-rose-500'];
+            let hash = 0;
+            for (let i = 0; i < name.length; i++) {
+                hash = name.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            const index = Math.abs(hash) % colors.length;
+            return {
+                initial: name.charAt(0).toUpperCase(),
+                color: colors[index]
+            };
+        }
 
         function getDashboardRecords() {
             const currentDateObj = new Date(curDate.getFullYear(), curDate.getMonth(), 1);
@@ -2222,10 +2247,11 @@
             return data.reduce((acc, r) => {
                 if(r.type === 'ingreso' || (r.type === 'prestamo' && r.status === 'paid' && !r.hasAbonos)) acc.i += r.amount;
                 if(r.type === 'gasto' || r.type === 'prestamo') acc.g += r.amount;
+                if(r.type === 'prestamo' && r.status === 'pending') acc.p += (r.amount - (r.paidAmount || 0));
                 
                 acc.b = acc.i - acc.g;
                 return acc;
-            }, { i: 0, g: 0, b: 0 });
+            }, { i: 0, g: 0, b: 0, p: 0 });
         }
 
         function updateHeader() {
@@ -2237,6 +2263,15 @@
             const card = document.getElementById('balance-card');
             if (viewGlobalBalance) card.classList.add('is-flipped');
             else card.classList.remove('is-flipped');
+        }
+
+        let blockCardClick = false;
+        function handleCardClick() {
+            if (blockCardClick) {
+                blockCardClick = false;
+                return;
+            }
+            toggleBalanceMode();
         }
 
         function renderDashboard(el, sm, sg, data) {
@@ -2274,10 +2309,17 @@
 
             el.innerHTML = `
                 <div class="mb-6 h-[180px] w-full" style="perspective: 1000px;">
-                    <div id="balance-card" class="flip-card ${viewGlobalBalance ? 'is-flipped' : ''}" onclick="toggleBalanceMode()">
+                    <div id="balance-card" class="flip-card ${viewGlobalBalance ? 'is-flipped' : ''}" onclick="handleCardClick()">
                         <div class="flip-card-face flip-card-front flex flex-col shadow-xl">
                             <p class="text-[9px] font-black uppercase opacity-60 tracking-widest mb-1">Balance Mensual</p>
-                            <h2 class="text-3xl font-black mb-5 tracking-tight dark:text-white">${fmt(sm.b)}</h2>
+                            <div class="flex items-end justify-between mb-5 w-full">
+                                <h2 class="text-3xl font-black tracking-tight dark:text-white leading-none">${fmt(sm.b)}</h2>
+                                ${sm.p > 0 && !appData.settings.privacyMode ? `
+                                <div class="flex flex-col text-right pb-0.5">
+                                    <span class="text-[7px] font-black uppercase opacity-50 tracking-widest leading-none mb-1">Total + Préstamos</span>
+                                    <span class="text-sm font-black opacity-75 leading-none">${fmt(sm.b + sm.p)}</span>
+                                </div>` : ''}
+                            </div>
                             <div class="flex gap-3">
                                 <div class="flex-1 bg-white/10 p-3 rounded-2xl border border-white/5">
                                     <p class="text-[8px] uppercase font-bold opacity-60">Entradas</p>
@@ -2291,7 +2333,30 @@
                         </div>
                         <div class="flip-card-face flip-card-back shadow-xl">
                             <p class="text-[9px] font-black uppercase opacity-60 tracking-widest mb-1">Balance Global</p>
-                            <h2 class="text-3xl font-black mb-5 tracking-tight dark:text-white">${fmt(sg.b)}</h2>
+                            <div class="flex items-end justify-between mb-5 w-full">
+                                <h2 class="text-3xl font-black tracking-tight dark:text-white leading-none">${fmt(sg.b)}</h2>
+                                ${sg.p > 0 && !appData.settings.privacyMode ? `
+                                <div class="flex flex-col text-right pb-0.5">
+                                    <span class="text-[7px] font-black uppercase opacity-50 tracking-widest leading-none mb-1">Total + Préstamos</span>
+                                    <span class="text-sm font-black opacity-75 leading-none">${fmt(sg.b + sg.p)}</span>
+                                </div>` : ''}
+                            </div>
+                            <div class="flex gap-3">
+                                <div class="flex-1 bg-white/10 p-3 rounded-2xl border border-white/5">
+                                    <p class="text-[8px] uppercase font-bold opacity-60">Entradas</p>
+                                    <p class="font-bold text-base dark:text-white">${fmt(sm.i)}</p>
+                                </div>
+                                <div class="flex-1 bg-white/10 p-3 rounded-2xl border border-white/5">
+                                    <p class="text-[8px] uppercase font-bold opacity-60">Salidas</p>
+                                    <p class="font-bold text-base dark:text-white">${fmt(sm.g)}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flip-card-face flip-card-back shadow-xl">
+                            <p class="text-[9px] font-black uppercase opacity-60 tracking-widest mb-1">Balance Global</p>
+                            <div class="flex items-end justify-between mb-5 w-full">
+                                <h2 class="text-3xl font-black tracking-tight dark:text-white leading-none">${fmt(sg.b)}</h2>
+                            </div>
                             <div class="flex gap-3">
                                 <div class="flex-1 bg-white/10 p-3 rounded-2xl border border-white/5">
                                     <p class="text-[8px] uppercase font-bold opacity-60">Entradas Globales</p>
@@ -2318,24 +2383,68 @@
                     </button>
                 </div>` : '<div class="pb-8"></div>'}
             `;
+
+            // --- LÓGICA MANTENER PRESIONADO EL BALANCE ---
+            const cardEl = document.getElementById('balance-card');
+            let cardTimer;
+            let startY = 0;
+            let startX = 0;
+            
+            const startCardHold = (e) => {
+                if (e.touches) {
+                    startX = e.touches[0].clientX;
+                    startY = e.touches[0].clientY;
+                }
+                blockCardClick = false;
+                cardTimer = setTimeout(() => {
+                    blockCardClick = true; // Bloquea el giro
+                    if(navigator.vibrate) navigator.vibrate(50);
+                    togglePrivacyMode();
+                }, 400); // 400ms para que se sienta un poquito más rápido
+            };
+            
+            const cancelCardHold = (e) => {
+                clearTimeout(cardTimer);
+            };
+
+            const moveCardHold = (e) => {
+                if (e.touches) {
+                    const diffX = Math.abs(e.touches[0].clientX - startX);
+                    const diffY = Math.abs(e.touches[0].clientY - startY);
+                    // Tolerancia de 10px para que los micromovimientos del dedo no cancelen el modo
+                    if (diffX > 10 || diffY > 10) clearTimeout(cardTimer);
+                } else {
+                    clearTimeout(cardTimer);
+                }
+            };
+
+            if (cardEl) {
+                cardEl.addEventListener('touchstart', startCardHold, {passive: true});
+                cardEl.addEventListener('touchend', cancelCardHold, {passive: true});
+                cardEl.addEventListener('touchmove', moveCardHold, {passive: true});
+                cardEl.addEventListener('mousedown', startCardHold);
+                cardEl.addEventListener('mouseup', cancelCardHold);
+                cardEl.addEventListener('mouseleave', cancelCardHold);
+            }
         }
 
         function renderRow(r, context = 'dashboard') {
-            let icon = {i:'ph-fill ph-circle', c:'text-gray-400'};
             const today = new Date().toISOString().split('T')[0];
             const isVencido = r.type === 'prestamo' && r.status === 'pending' && r.payDate && r.payDate < today;
 
+            let iconHtml = '';
             let opacityClass = '';
             let amountPrefix = '-';
             let amountColor = 'text-gray-900 dark:text-white';
             let titlePrefix = '';
             
             if (r.type === 'prestamo') {
+                const avatar = getAvatarData(r.category);
+                iconHtml = `<div class="w-10 h-10 flex-shrink-0 rounded-full ${avatar.color} text-white flex items-center justify-center font-black text-[15px] shadow-sm opacity-90">${avatar.initial}</div>`;
+                
                 if (context === 'ingresos') {
-                    // Para prestamos antiguos sin abonos que ya estan pagados
                     amountPrefix = '+';
                     amountColor = 'text-themeGreen dark:text-white';
-                    icon = {i:'ph-fill ph-handshake', c:'text-themeGreen dark:text-white'};
                     titlePrefix = 'Cobro: ';
                 } else if (context === 'gastos' || context === 'dashboard') {
                     amountPrefix = '-';
@@ -2343,18 +2452,18 @@
                     if (r.status === 'paid') {
                         opacityClass = 'opacity-40 grayscale';
                         titlePrefix = '(Cobrado) ';
-                        icon = {i:'ph-fill ph-handshake', c:'text-gray-400'};
-                    } else {
-                        icon = {i:'ph-fill ph-handshake', c:'text-amber-500'};
                     }
                 }
-            } else if (r.type === 'ingreso') {
-                amountPrefix = '+';
-                amountColor = 'text-themeGreen dark:text-white';
-                icon = { i: r.icon || 'ph-fill ph-circle', c: r.color || 'text-themeGreen' };
             } else {
-                amountColor = 'text-gray-900 dark:text-white';
-                icon = { i: r.icon || 'ph-fill ph-circle', c: r.color || 'text-themeCafe' };
+                let icon = { i: r.icon || 'ph-fill ph-circle', c: r.color || 'text-themeCafe' };
+                if (r.type === 'ingreso') {
+                    amountPrefix = '+';
+                    amountColor = 'text-themeGreen dark:text-white';
+                    icon = { i: r.icon || 'ph-fill ph-circle', c: r.color || 'text-themeGreen' };
+                } else {
+                    amountColor = 'text-gray-900 dark:text-white';
+                }
+                iconHtml = `<div class="w-10 h-10 flex-shrink-0 rounded-xl bg-gray-100 dark:bg-white/5 flex items-center justify-center ${icon.c}"><i class="${icon.i} text-xl"></i></div>`;
             }
 
             const isArrastrado = r.originalDate && r.originalDate !== r.date;
@@ -2363,7 +2472,7 @@
             return `
                 <div data-id="${r.id}" class="record-item w-full select-none cursor-pointer bg-iosCard-light dark:bg-iosCard-dark p-4 rounded-2xl flex justify-between items-center border ${isVencido ? 'border-amber-500/50 bg-amber-500/[0.03]' : 'border-black/[0.03] dark:border-white/[0.03]'} active:scale-[0.98] transition-all ${opacityClass}">
                     <div class="flex items-center gap-3 w-[65%] overflow-hidden">
-                        <div class="w-10 h-10 flex-shrink-0 rounded-xl bg-gray-100 dark:bg-white/5 flex items-center justify-center ${icon.c}"><i class="${icon.i} text-xl"></i></div>
+                        ${iconHtml}
                         <div class="min-w-0 flex-1">
                             <p class="text-[11px] font-black tracking-tight truncate">${titlePrefix}${r.category} ${isVencido ? '⚠️' : ''}</p>
                             <p class="text-[8px] font-bold opacity-30 uppercase tracking-widest">${dateText}</p>
@@ -2390,6 +2499,7 @@
                         const paidSoFar = r.paidAmount || 0;
                         const remaining = r.amount - paidSoFar;
                         const hasAbonos = r.hasAbonos && paidSoFar > 0;
+                        const avatar = getAvatarData(r.category);
                         
                         const amountDisplay = hasAbonos && r.status === 'pending' 
                             ? `<p class="font-black text-base text-gray-900 dark:text-white">${fmt(remaining)}</p><p class="text-[9px] font-bold opacity-40 uppercase tracking-widest mt-0.5">DE ${fmt(r.amount)}</p>` 
@@ -2403,7 +2513,7 @@
                         <div data-id="${r.id}" class="record-item select-none cursor-pointer bg-iosCard-light dark:bg-iosCard-dark p-5 rounded-3xl border ${isVencido ? 'border-amber-500 bg-amber-500/5' : 'border-black/[0.03] dark:border-white/[0.03]'} ${r.status==='paid'?'opacity-40 grayscale':''}">
                             <div class="flex justify-between items-center ${r.status==='pending'?'mb-4':''}">
                                 <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center font-bold text-xs"><i class="ph-fill ph-user text-lg"></i></div>
+                                    <div class="w-10 h-10 rounded-full ${avatar.color} text-white flex items-center justify-center font-black text-[15px] shadow-sm">${avatar.initial}</div>
                                     <div>
                                         <p class="font-black text-sm">${r.category}</p>
                                         <div class="flex gap-2">
@@ -2685,10 +2795,16 @@
             const isPaidPrestamo = r.type === 'prestamo' && r.status === 'paid';
             const isOut = r.type === 'gasto' || (r.type === 'prestamo' && r.status === 'pending');
             
-            const icon = r.type === 'prestamo' ? {i:'ph-fill ph-handshake', c: isPaidPrestamo ? 'text-themeGreen' : 'text-amber-500'} : {i: r.icon || 'ph-fill ph-circle', c: r.color || 'text-gray-400'};
-            
-            document.getElementById('detail-icon').className = icon.i;
-            document.getElementById('detail-icon-container').className = `w-20 h-20 rounded-full flex items-center justify-center mb-4 text-4xl bg-gray-100 dark:bg-white/5 ${icon.c}`;
+            const container = document.getElementById('detail-icon-container');
+            if (r.type === 'prestamo') {
+                const avatar = getAvatarData(r.category);
+                container.className = `w-20 h-20 rounded-full flex items-center justify-center mb-4 text-4xl shadow-sm text-white ${avatar.color} ${isPaidPrestamo ? 'opacity-40 grayscale' : ''}`;
+                container.innerHTML = `<span class="font-black text-[40px]">${avatar.initial}</span>`;
+            } else {
+                let icon = {i: r.icon || 'ph-fill ph-circle', c: r.color || 'text-gray-400'};
+                container.className = `w-20 h-20 rounded-full flex items-center justify-center mb-4 text-4xl bg-gray-100 dark:bg-white/5 ${icon.c}`;
+                container.innerHTML = `<i id="detail-icon" class="${icon.i}"></i>`;
+            }
             
             const dateToUse = r.originalDate || r.date;
             
@@ -2888,7 +3004,7 @@
                     const data = JSON.parse(evt.target.result);
                     if(data.records) {
                         appData = data;
-                        if (!appData.settings) appData.settings = { dark: false, apiKey: '', colorTheme: 'classic', appName: 'Rioluquitas', font: 'sans' };
+                        if (!appData.settings) appData.settings = { dark: false, apiKey: '', aiVoice: true, aiCamera: true, colorTheme: 'classic', appName: 'Rioluquitas', font: 'sans', privacyMode: false };
                         if (!appData.cats) {
                             appData.cats = {
                                 gasto: [...defaultCats.gasto, ...(appData.customCats?.gasto || [])],
