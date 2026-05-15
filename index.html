@@ -337,6 +337,17 @@
                     </div>
                 </div>
 
+                <div id="pay-method-box" class="flex gap-2">
+                    <button type="button" onclick="setPayMethod('debito')" id="btn-pm-debito" class="flex-1 py-3 bg-gray-200/50 dark:bg-white/5 rounded-xl flex items-center justify-center gap-2 transition-all border-2 border-transparent">
+                        <i class="ph-fill ph-credit-card text-lg"></i>
+                        <span class="text-[10px] font-black uppercase tracking-widest">Débito</span>
+                    </button>
+                    <button type="button" onclick="setPayMethod('efectivo')" id="btn-pm-efectivo" class="flex-1 py-3 bg-gray-200/50 dark:bg-white/5 rounded-xl flex items-center justify-center gap-2 transition-all border-2 border-transparent">
+                        <i class="ph-fill ph-money text-lg"></i>
+                        <span class="text-[10px] font-black uppercase tracking-widest">Efectivo</span>
+                    </button>
+                </div>
+
                 <div class="grid grid-cols-2 gap-4">
                     <div onclick="openDatePicker('in-date')">
                         <label class="text-[9px] font-black uppercase opacity-40 ml-1 tracking-widest">Fecha Registro</label>
@@ -1417,7 +1428,8 @@
                 status: tipoT === 'prestamo' ? 'pending' : 'done',
                 icon: icon,
                 color: color,
-                originalDate: date
+                originalDate: date,
+                payMethod: 'debito'
             });
 
             save();
@@ -1505,6 +1517,7 @@
         let viewGlobalBalance = false;
         let selectorYear = new Date().getFullYear();
         let editingId = null;
+        let curPayMethod = 'debito';
 
         const mNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
@@ -1647,6 +1660,16 @@
         
         let ccFilteredIcons = [...ccAllIcons];
         const ccColors = ['text-blue-500', 'text-red-500', 'text-orange-500', 'text-emerald-500', 'text-indigo-500', 'text-pink-400', 'text-purple-500', 'text-teal-500', 'text-yellow-500', 'text-gray-400'];
+
+        function setPayMethod(method) {
+            curPayMethod = method;
+            const bD = document.getElementById('btn-pm-debito');
+            const bE = document.getElementById('btn-pm-efectivo');
+            
+            bD.className = method === 'debito' ? "flex-1 py-3 bg-themeGreen/10 text-themeGreen dark:bg-themeGreen/20 dark:text-themeGreen-light rounded-xl flex items-center justify-center gap-2 transition-all border-2 border-themeGreen/50" : "flex-1 py-3 bg-gray-200/50 dark:bg-white/5 text-gray-500 dark:text-gray-400 rounded-xl flex items-center justify-center gap-2 transition-all border-2 border-transparent";
+            
+            bE.className = method === 'efectivo' ? "flex-1 py-3 bg-themeGreen/10 text-themeGreen dark:bg-themeGreen/20 dark:text-themeGreen-light rounded-xl flex items-center justify-center gap-2 transition-all border-2 border-themeGreen/50" : "flex-1 py-3 bg-gray-200/50 dark:bg-white/5 text-gray-500 dark:text-gray-400 rounded-xl flex items-center justify-center gap-2 transition-all border-2 border-transparent";
+        }
 
         function openCustomCatsModal() {
             setCustomCatTab('gasto');
@@ -2245,13 +2268,22 @@
 
         function getStats(data) {
             return data.reduce((acc, r) => {
-                if(r.type === 'ingreso' || (r.type === 'prestamo' && r.status === 'paid' && !r.hasAbonos)) acc.i += r.amount;
-                if(r.type === 'gasto' || r.type === 'prestamo') acc.g += r.amount;
+                const method = r.payMethod || 'debito';
+                if(r.type === 'ingreso' || (r.type === 'prestamo' && r.status === 'paid' && !r.hasAbonos)) {
+                    acc.i += r.amount;
+                    if(method === 'efectivo') acc.iEf += r.amount; else acc.iDeb += r.amount;
+                }
+                if(r.type === 'gasto' || r.type === 'prestamo') {
+                    acc.g += r.amount;
+                    if(method === 'efectivo') acc.gEf += r.amount; else acc.gDeb += r.amount;
+                }
                 if(r.type === 'prestamo' && r.status === 'pending') acc.p += (r.amount - (r.paidAmount || 0));
                 
                 acc.b = acc.i - acc.g;
+                acc.bDeb = acc.iDeb - acc.gDeb;
+                acc.bEf = acc.iEf - acc.gEf;
                 return acc;
-            }, { i: 0, g: 0, b: 0, p: 0 });
+            }, { i: 0, g: 0, b: 0, p: 0, iDeb: 0, gDeb: 0, bDeb: 0, iEf: 0, gEf: 0, bEf: 0 });
         }
 
         function updateHeader() {
@@ -2445,13 +2477,15 @@
                 if (context === 'ingresos') {
                     amountPrefix = '+';
                     amountColor = 'text-themeGreen dark:text-white';
-                    titlePrefix = 'Cobro: ';
+                    titlePrefix = 'Cobro Préstamo: ';
                 } else if (context === 'gastos' || context === 'dashboard') {
                     amountPrefix = '-';
                     amountColor = 'text-gray-900 dark:text-white';
                     if (r.status === 'paid') {
                         opacityClass = 'opacity-40 grayscale';
-                        titlePrefix = '(Cobrado) ';
+                        titlePrefix = '(Cobrado) Préstamo: ';
+                    } else {
+                        titlePrefix = 'Préstamo: ';
                     }
                 }
             } else {
@@ -2548,10 +2582,41 @@
             // Solo mostramos préstamos pagados en ingresos SI NO tienen abonos (compatibilidad antigua)
             const filtered = data.filter(r => isIngreso ? (r.type === 'ingreso' || (r.type === 'prestamo' && r.status === 'paid' && !r.hasAbonos)) : (r.type === 'gasto' || r.type === 'prestamo'));
             
+            let extraHtml = '';
+            if (isIngreso) {
+                let totalDebito = 0;
+                let totalEfectivo = 0;
+                filtered.forEach(r => {
+                    if (r.payMethod === 'efectivo') totalEfectivo += r.amount;
+                    else totalDebito += r.amount;
+                });
+                
+                extraHtml = `
+                    <div class="flex justify-center gap-6 mt-4 pt-4 border-t border-black/5 dark:border-white/5">
+                        <div class="flex flex-col items-center">
+                            <div class="flex items-center gap-1 text-gray-500 dark:text-gray-400 mb-0.5">
+                                <i class="ph-fill ph-credit-card text-lg"></i>
+                                <span class="text-[9px] font-black uppercase tracking-widest">Débito</span>
+                            </div>
+                            <span class="font-bold text-sm text-themeGreen dark:text-white">${fmt(totalDebito)}</span>
+                        </div>
+                        <div class="w-px bg-black/5 dark:bg-white/5"></div>
+                        <div class="flex flex-col items-center">
+                            <div class="flex items-center gap-1 text-gray-500 dark:text-gray-400 mb-0.5">
+                                <i class="ph-fill ph-money text-lg"></i>
+                                <span class="text-[9px] font-black uppercase tracking-widest">Efectivo</span>
+                            </div>
+                            <span class="font-bold text-sm text-themeGreen dark:text-white">${fmt(totalEfectivo)}</span>
+                        </div>
+                    </div>
+                `;
+            }
+
             el.innerHTML = `
                 <div class="bg-iosCard-light dark:bg-iosCard-dark p-8 rounded-3xl text-center mb-6 border border-black/[0.03] dark:border-white/[0.03]">
                     <p class="text-[9px] font-black opacity-40 uppercase tracking-widest mb-1">${isIngreso ? 'INGRESOS TOTALES' : 'GASTOS TOTALES'}</p>
                     <h2 class="text-3xl font-black ${isIngreso ? 'text-themeGreen dark:text-white' : 'text-themeCafe dark:text-white'}">${fmt(filtered.reduce((s,r) => s + r.amount, 0))}</h2>
+                    ${extraHtml}
                 </div>
                 <div class="space-y-2 pb-10 w-full flex flex-col items-center">
                     ${filtered.slice().reverse().map(r => renderRow(r, tab)).join('') || `
@@ -2603,7 +2668,8 @@
                 status: 'done',
                 icon: 'ph-fill ph-handshake',
                 color: 'text-themeGreen',
-                originalDate: new Date().toISOString().split('T')[0]
+                originalDate: new Date().toISOString().split('T')[0],
+                payMethod: 'debito'
             });
 
             const btn = document.getElementById('btn-submit-abono');
@@ -2639,7 +2705,8 @@
                     status: 'done',
                     icon: 'ph-fill ph-handshake',
                     color: 'text-themeGreen',
-                    originalDate: new Date().toISOString().split('T')[0]
+                    originalDate: new Date().toISOString().split('T')[0],
+                    payMethod: 'debito'
                 });
                 
                 save();
@@ -2675,6 +2742,7 @@
             editingId = null;
             document.getElementById('btn-submit-form').textContent = 'Guardar Registro';
             setFormMode(curTab === 'ingresos' ? 'ingreso' : (curTab === 'prestamos' ? 'prestamo' : 'gasto'));
+            setPayMethod('debito');
             document.getElementById('add-form').reset();
             document.getElementById('in-amount-formatted').value = '';
             document.getElementById('in-amount-raw').value = '';
@@ -2707,6 +2775,7 @@
             const pField = document.getElementById('person-field');
             const payBox = document.getElementById('paydate-box');
             const detailBox = document.getElementById('detalle-box');
+            const pmBox = document.getElementById('pay-method-box');
             
             // --- ACTUALIZACIÓN BOTÓN IA DINÁMICO ---
             const aiBtn = document.getElementById('btn-ai-action');
@@ -2753,9 +2822,9 @@
 
             grid.innerHTML = '';
             if(mode === 'prestamo') { 
-                catBox.classList.add('hidden'); pField.classList.remove('hidden'); payBox.classList.remove('hidden'); detailBox.classList.add('hidden');
+                catBox.classList.add('hidden'); pField.classList.remove('hidden'); payBox.classList.remove('hidden'); detailBox.classList.add('hidden'); pmBox.classList.add('hidden');
             } else {
-                catBox.classList.remove('hidden'); pField.classList.add('hidden'); payBox.classList.add('hidden'); detailBox.classList.remove('hidden');
+                catBox.classList.remove('hidden'); pField.classList.add('hidden'); payBox.classList.add('hidden'); detailBox.classList.remove('hidden'); pmBox.classList.remove('hidden');
                 
                 const combinedCats = appData.cats[mode] || [];
                 
@@ -2834,6 +2903,7 @@
             const r = appData.records.find(x => x.id === id); if(!r) return;
             editingId = id;
             setFormMode(r.type, r.category);
+            setPayMethod(r.payMethod || 'debito');
             document.getElementById('in-amount-raw').value = r.amount;
             document.getElementById('in-amount-formatted').value = '$ ' + new Intl.NumberFormat('es-CL').format(r.amount);
             
@@ -2945,6 +3015,7 @@
             const payDate = document.getElementById('in-pay-date').value;
             const detail = document.getElementById('in-detail').value;
             const category = curFormMode === 'prestamo' ? document.getElementById('in-person').value : curSelCat;
+            const payMethod = (curFormMode === 'ingreso' || curFormMode === 'gasto') ? curPayMethod : 'debito';
             
             if(!category || isNaN(amount)) return showToast('COMPLETAR DATOS');
 
@@ -2955,10 +3026,10 @@
 
             if (editingId) {
                 const idx = appData.records.findIndex(r => r.id === editingId);
-                if(idx !== -1) appData.records[idx] = { ...appData.records[idx], type: curFormMode, amount, date, payDate, detail, category, icon, color, originalDate: date };
+                if(idx !== -1) appData.records[idx] = { ...appData.records[idx], type: curFormMode, amount, date, payDate, detail, category, icon, color, originalDate: date, payMethod };
                 showToast('ACTUALIZADO');
             } else {
-                appData.records.push({ id: Date.now(), type: curFormMode, amount, date, payDate, detail, category, status: curFormMode === 'prestamo' ? 'pending' : 'done', icon, color, originalDate: date });
+                appData.records.push({ id: Date.now(), type: curFormMode, amount, date, payDate, detail, category, status: curFormMode === 'prestamo' ? 'pending' : 'done', icon, color, originalDate: date, payMethod });
                 showToast('GUARDADO');
             }
             save(); closeAllModals(); navigate(curFormMode + 's');
