@@ -73,7 +73,7 @@
         html {
             touch-action: manipulation;
             -webkit-text-size-adjust: 100%;
-            overscroll-behavior-y: none; /* Previene rebote global */
+            overscroll-behavior-y: none; 
         }
 
         body { 
@@ -329,7 +329,6 @@
                         <input type="text" id="in-amount-formatted" required class="ios-input flex-1 !text-2xl font-black text-themeGreen dark:text-themeGreen-light" placeholder="$ 0" inputmode="numeric">
                         <input type="hidden" id="in-amount-raw">
                         
-                        <!-- BOTÓN IA (Dinámico: Microfono para Ingreso/Prestar, Magia para Gasto) -->
                         <button type="button" id="btn-ai-action" class="w-10 h-10 rounded-xl flex items-center justify-center bg-blue-500/10 active:scale-90 transition-all text-blue-600 dark:text-blue-400 ml-2">
                             <i id="icon-ai-action" class="ph-bold ph-microphone text-xl"></i>
                         </button>
@@ -391,7 +390,7 @@
             </form>
         </div>
 
-        <!-- MODAL ELECCIÓN IA (CÁMARA O VOZ) PARA GASTOS -->
+        <!-- MODAL ELECCIÓN IA -->
         <div id="modal-ai-choice" class="modal-sheet z-[70]" style="height: auto; min-height: 40%; max-height: 60%;">
             <div class="modal-handle-container"><div class="modal-handle"></div></div>
             <div class="px-6 flex flex-col pb-8">
@@ -596,6 +595,26 @@
                             <input type="file" id="import-input" class="hidden" accept=".json">
                         </label>
                     </div>
+                    
+                    <button onclick="openClearAllModal()" class="w-full bg-red-500/10 text-red-500 p-4 rounded-3xl flex justify-center items-center gap-2 font-black text-[10px] tracking-widest uppercase active:scale-95 transition-all border border-red-500/20 mt-2">
+                        <i class="ph-bold ph-trash text-lg"></i>Borrar Todos los Datos
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL CONFIRMAR BORRAR TODO -->
+        <div id="modal-clear-all" class="modal-sheet z-[80]" style="height: auto; min-height: 40%;">
+            <div class="modal-handle-container"><div class="modal-handle"></div></div>
+            <div class="px-6 flex flex-col pb-8 items-center text-center h-full">
+                <div class="w-16 h-16 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mb-4 mt-2">
+                    <i class="ph-fill ph-warning-octagon text-4xl"></i>
+                </div>
+                <h3 class="text-2xl font-black tracking-tight mb-2">¿Borrar Todo?</h3>
+                <p class="text-sm font-medium opacity-60 mb-8 px-2">Esta acción eliminará <b>todos tus registros</b> permanentemente. No se puede deshacer.</p>
+                <div class="flex gap-3 w-full mt-auto">
+                    <button onclick="closeModal('modal-clear-all')" class="flex-1 bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-gray-300 font-black py-4 rounded-2xl active:scale-95 transition-transform tracking-widest uppercase text-[10px]">Cancelar</button>
+                    <button onclick="executeClearAll()" class="flex-1 bg-red-500 text-white font-black py-4 rounded-2xl active:scale-95 transition-transform tracking-widest uppercase text-[10px] shadow-lg shadow-red-500/20">Sí, Borrar</button>
                 </div>
             </div>
         </div>
@@ -618,7 +637,7 @@
             </div>
         </div>
 
-        <!-- MODAL: TEMAS Y FUENTES (RESTURADO Y MEJORADO AL 1000%) -->
+        <!-- MODAL: TEMAS Y FUENTES -->
         <div id="modal-theme" class="modal-sheet z-[75]">
             <div class="modal-handle-container flex-shrink-0"><div class="modal-handle"></div></div>
             <div class="px-6 flex-1 overflow-y-auto no-scrollbar pb-10">
@@ -632,7 +651,6 @@
                 </div>
 
                 <p class="text-[10px] font-black uppercase tracking-widest opacity-40 mb-3 ml-2">16 Temas Premium</p>
-                <!-- Este grid se llena automáticamente en JS con los 16 temas -->
                 <div class="grid grid-cols-4 gap-3 mb-8" id="theme-presets-grid"></div>
 
                 <p class="text-[10px] font-black uppercase tracking-widest opacity-40 mb-3 ml-2">Colores Avanzados</p>
@@ -671,30 +689,23 @@
             </div>
         </div>
 
-        <!-- MODAL: ANÁLISIS DEL MES (NUEVO DASHBOARD) -->
+        <!-- MODAL: ANÁLISIS DEL MES -->
         <div id="modal-analytics" class="modal-sheet z-[75]">
             <div class="modal-handle-container flex-shrink-0"><div class="modal-handle"></div></div>
             <div class="px-6 flex-1 overflow-y-auto no-scrollbar pb-12">
                 <h3 class="text-2xl font-black tracking-tight mb-6 text-center mt-2">Análisis de <span id="analytics-month-name" class="text-themeGreen"></span></h3>
                 
                 <div class="flex flex-col gap-6">
-                    <!-- SECCIÓN 1: EL VERSUS (TARJETA DE DIAGNÓSTICO) -->
                     <div>
                         <p class="text-[10px] font-black uppercase tracking-widest opacity-40 mb-2 ml-1">Comparativa</p>
-                        <div id="analytics-versus-card" class="bg-iosCard-light dark:bg-iosCard-dark border border-black/5 dark:border-white/5 p-5 rounded-3xl shadow-sm flex flex-col items-center text-center">
-                            <!-- Se llena con JS -->
-                        </div>
+                        <div id="analytics-versus-card" class="bg-iosCard-light dark:bg-iosCard-dark border border-black/5 dark:border-white/5 p-5 rounded-3xl shadow-sm flex flex-col items-center text-center"></div>
                     </div>
 
-                    <!-- SECCIÓN 2: PROYECCIÓN (LA BOLA DE CRISTAL) -->
                     <div>
                         <p class="text-[10px] font-black uppercase tracking-widest opacity-40 mb-2 ml-1">Proyección Mensual</p>
-                        <div id="analytics-projection" class="bg-iosCard-light dark:bg-iosCard-dark border border-black/5 dark:border-white/5 p-5 rounded-3xl shadow-sm">
-                            <!-- Se llena con JS -->
-                        </div>
+                        <div id="analytics-projection" class="bg-iosCard-light dark:bg-iosCard-dark border border-black/5 dark:border-white/5 p-5 rounded-3xl shadow-sm"></div>
                     </div>
 
-                    <!-- SECCIÓN 3: FLUJO E INGRESOS -->
                     <div>
                         <p class="text-[10px] font-black uppercase tracking-widest opacity-40 mb-2 ml-1">Flujo de Dinero</p>
                         <div class="bg-iosCard-light dark:bg-iosCard-dark border border-black/5 dark:border-white/5 p-5 rounded-3xl shadow-sm">
@@ -708,7 +719,6 @@
                                     <span id="analytics-exp-text" class="text-lg font-black text-gray-900 dark:text-white"></span>
                                 </div>
                             </div>
-                            <!-- Barra de Flujo -->
                             <div class="w-full h-3 bg-gray-200 dark:bg-white/10 rounded-full overflow-hidden flex">
                                 <div id="analytics-bar-inc" class="h-full bg-themeGreen progress-bar-fill w-0"></div>
                                 <div id="analytics-bar-exp" class="h-full bg-gray-800 dark:bg-gray-400 progress-bar-fill w-0"></div>
@@ -717,21 +727,15 @@
                         </div>
                     </div>
 
-                    <!-- SECCIÓN 4: DATOS CURIOSOS -->
                     <div>
                         <p class="text-[10px] font-black uppercase tracking-widest opacity-40 mb-2 ml-1">Datos Curiosos</p>
-                        <div id="analytics-insights" class="grid grid-cols-2 gap-3">
-                            <!-- Se llena con JS -->
-                        </div>
+                        <div id="analytics-insights" class="grid grid-cols-2 gap-3"></div>
                     </div>
 
-                    <!-- SECCIÓN 5: DISTRIBUCIÓN DE GASTOS -->
                     <div>
                         <p class="text-[10px] font-black uppercase tracking-widest opacity-40 mb-2 ml-1">Top Gastos del Mes</p>
                         <div class="bg-iosCard-light dark:bg-iosCard-dark border border-black/5 dark:border-white/5 p-5 rounded-3xl shadow-sm">
-                            <div id="analytics-categories" class="space-y-4">
-                                <!-- Se llena con JS -->
-                            </div>
+                            <div id="analytics-categories" class="space-y-4"></div>
                         </div>
                     </div>
 
@@ -740,7 +744,7 @@
             </div>
         </div>
 
-        <!-- MODAL: GESTOR DE CATEGORÍAS PERSONALIZADAS -->
+        <!-- MODAL: GESTOR DE CATEGORÍAS -->
         <div id="modal-custom-cats" class="modal-sheet z-[70]">
             <div class="modal-handle-container"><div class="modal-handle"></div></div>
             <div class="px-6 flex flex-col h-full pb-8">
@@ -761,7 +765,7 @@
                     
                     <div class="ios-input-full mb-2 flex items-center gap-2 !py-2 !bg-gray-200/50 dark:!bg-white/5 border border-black/5 dark:border-white/5">
                         <i class="ph ph-magnifying-glass text-gray-400 text-lg"></i>
-                        <input type="text" id="cc-icon-search" class="ios-input !text-[13px] !font-medium" placeholder="Buscar icono (ej: comida, mascota, luz...)" oninput="filterCcIcons()">
+                        <input type="text" id="cc-icon-search" class="ios-input !text-[13px] !font-medium" placeholder="Buscar icono (ej: comida, mascota...)" oninput="filterCcIcons()">
                     </div>
                     
                     <div class="flex gap-3 mb-2 overflow-x-auto no-scrollbar pb-1" id="cc-icon-sel"></div>
@@ -775,7 +779,7 @@
             </div>
         </div>
 
-        <!-- MODAL: CONFIGURACIÓN DE IA (API KEY) -->
+        <!-- MODAL: CONFIGURACIÓN DE IA -->
         <div id="modal-api-key" class="modal-sheet z-[70]">
             <div class="modal-handle-container"><div class="modal-handle"></div></div>
             <div class="px-6 flex flex-col h-full pb-8">
@@ -814,7 +818,7 @@
             </div>
         </div>
 
-        <!-- MODAL ESCUCHANDO IA (MICRÓFONO) -->
+        <!-- MODAL ESCUCHANDO IA -->
         <div id="modal-listening" class="fixed inset-0 bg-black/60 z-[100] opacity-0 pointer-events-none transition-opacity duration-300 backdrop-blur-sm flex items-center justify-center">
             <div class="bg-iosCard-light dark:bg-iosCard-dark p-8 rounded-[32px] flex flex-col items-center shadow-2xl mx-6 w-64 text-center border border-black/5 dark:border-white/5">
                 <div class="w-20 h-20 bg-blue-500/10 text-blue-500 rounded-full flex items-center justify-center mb-6 relative">
@@ -848,7 +852,6 @@
                     <h3 class="text-2xl font-black tracking-tight mb-6 text-center">Resumen de la IA</h3>
                     <div class="bg-gray-100 dark:bg-white/5 rounded-3xl p-5 mb-6 space-y-4 shadow-sm border border-black/5 dark:border-white/5">
                         
-                        <!-- NUEVA LÍNEA: TIPO DE TRANSACCIÓN -->
                         <div class="flex justify-between items-center border-b border-black/5 dark:border-white/5 pb-3">
                             <span class="text-[10px] font-black uppercase opacity-40 tracking-widest">Tipo</span>
                             <span id="ai-sum-tipo" class="font-black text-sm uppercase tracking-widest text-themeGreen"></span>
@@ -901,7 +904,6 @@
     </div>
 
     <script>
-        // --- SISTEMA DE 16 TEMAS Y TIPOGRAFÍAS MAESTRAS ---
         const PRESET_THEMES = {
             classic: { name: 'Verde', p: '#3A5A40', s: '#582F0E', bl: '#F2F2F7', bd: '#000000' },
             ocean: { name: 'Océano', p: '#0284c7', s: '#0f766e', bl: '#f0f9ff', bd: '#082f49' },
@@ -915,7 +917,6 @@
             cherry: { name: 'Cereza', p: '#e11d48', s: '#881337', bl: '#fff1f2', bd: '#4c0519' },
             midnight: { name: 'Noche', p: '#3b82f6', s: '#1e3a8a', bl: '#eff6ff', bd: '#020617' },
             mono: { name: 'Dark', p: '#4b5563', s: '#1f2937', bl: '#f3f4f6', bd: '#030712' },
-            // Nuevos temas de naturaleza (Verdes y Cafés)
             matcha: { name: 'Matcha', p: '#8A9A5B', s: '#A67B5B', bl: '#F9F8F0', bd: '#1E2019' },
             bamboo: { name: 'Bambú', p: '#556B2F', s: '#8B5A2B', bl: '#FAF9F6', bd: '#141A0B' },
             pino: { name: 'Pino', p: '#1A4D2E', s: '#4F311C', bl: '#F4F5F0', bd: '#0B1C11' },
@@ -1125,17 +1126,14 @@
             showToast('NOMBRE ACTUALIZADO');
         }
 
-        // --- SISTEMA MODO PRIVACIDAD ---
         function togglePrivacyMode() {
             appData.settings.privacyMode = !appData.settings.privacyMode;
             save();
             navigate(curTab); 
             showToast(appData.settings.privacyMode ? 'MODO OCULTO ACTIVADO' : 'MODO OCULTO DESACTIVADO');
-            // Seguro para evitar clics accidentales después de cambiar la vista
             setTimeout(() => { blockCardClick = false; }, 300);
         }
 
-        // AQUI SE CORRIGIÓ EL NOMBRE DE LA FUNCION DE LA API KEY
         function openApiModal() {
             document.getElementById('api-key-input').value = appData.settings.apiKey || '';
             updateAiTogglesUI();
@@ -1179,7 +1177,6 @@
             showToast('LLAVE GUARDADA');
         }
 
-        // --- SISTEMA DE RECONOCIMIENTO DE VOZ ---
         let recognition = null;
         let isListening = false;
 
@@ -1189,7 +1186,7 @@
                 recognition = new SpeechRecognition();
                 recognition.continuous = true;
                 recognition.interimResults = true;
-                recognition.lang = 'es-CL'; // Español de Chile
+                recognition.lang = 'es-CL'; 
 
                 recognition.onstart = function() {
                     isListening = true;
@@ -1255,7 +1252,6 @@
             if (recognition && isListening) recognition.stop();
         }
 
-        // --- SISTEMA DE FOTO ---
         function triggerCamera() {
             if (!navigator.onLine) return showToast('SIN CONEXIÓN A INTERNET', 3000);
             if (!appData.settings.apiKey) return showToast('FALTA LLAVE DE IA EN AJUSTES', 3000);
@@ -1288,7 +1284,6 @@
             reader.readAsDataURL(file);
         }
 
-        // --- CEREBRO UNIFICADO GEMINI (TEXTO Y FOTO) ---
         async function sendToGeminiUnified(base64Data, voiceText) {
             const apiKey = appData.settings.apiKey;
             const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
@@ -1356,7 +1351,6 @@
                 const textRes = data.candidates[0].content.parts[0].text;
                 const result = JSON.parse(textRes);
                 
-                // Normalizar "tipo" a los permitidos
                 let tipoStr = result.tipo ? result.tipo.toLowerCase().trim() : 'gasto';
                 if (!['gasto', 'ingreso', 'prestamo'].includes(tipoStr)) tipoStr = 'gasto';
                 result.tipo = tipoStr;
@@ -1365,7 +1359,6 @@
                 
                 document.getElementById('modal-ai-loading').classList.add('opacity-0', 'pointer-events-none');
                 
-                // Rellenar visualmente el resumen de la IA
                 const colorTipo = tipoStr === 'ingreso' ? 'text-themeGreen' : (tipoStr === 'prestamo' ? 'text-amber-500' : 'text-themeCafe');
                 
                 document.getElementById('ai-sum-tipo').textContent = tipoStr;
@@ -1528,7 +1521,6 @@
         let ccSelectedColor = 'text-blue-500';
         let editingCustomCatIdx = null;
         
-        // --- SÚPER LISTA DE ICONOS EXPANDIDA (>120 iconos) ---
         const ccAllIcons = [
             { i: 'ph-fill ph-star', t: 'estrella favorito star destacado' },
             { i: 'ph-fill ph-heart', t: 'corazon amor pareja novios cita' },
@@ -1783,15 +1775,11 @@
             renderCustomCatList();
         }
 
-        // --- INICIO LÓGICA DASHBOARD / ANÁLISIS MEJORADO ---
         function openAnalyticsModal() {
             try {
-                // Se removió el closeModal('modal-settings') para que se apilen correctamente
-                
                 const mNombre = mNames[curDate.getMonth()];
                 document.getElementById('analytics-month-name').textContent = mNombre;
 
-                // 1. Filtrar datos del mes actual y mes pasado
                 const currentMonthData = appData.records.filter(r => {
                     const d = new Date(r.date + 'T00:00:00');
                     return d.getMonth() === curDate.getMonth() && d.getFullYear() === curDate.getFullYear();
@@ -1807,7 +1795,6 @@
                 const statPast = getStats(pastMonthData);
                 const gastosMes = currentMonthData.filter(r => r.type === 'gasto' || (r.type === 'prestamo' && r.status === 'pending'));
 
-                // --- RENDER 1: VERSUS CARD ---
                 const versusCard = document.getElementById('analytics-versus-card');
                 if (statPast.g === 0 && statPast.i === 0) {
                     versusCard.innerHTML = `
@@ -1850,7 +1837,6 @@
                     `;
                 }
 
-                // --- RENDER 2: PROYECCIÓN (LA BOLA DE CRISTAL) ---
                 const projEl = document.getElementById('analytics-projection');
                 const realNow = new Date();
                 const isCurrentMonth = curDate.getMonth() === realNow.getMonth() && curDate.getFullYear() === realNow.getFullYear();
@@ -1858,7 +1844,6 @@
                 if (isCurrentMonth && statCur.g > 0) {
                     const currentDay = realNow.getDate();
                     const daysInMonth = new Date(curDate.getFullYear(), curDate.getMonth() + 1, 0).getDate();
-                    // Proyección lineal simple
                     const dailyAvg = currentDay > 0 ? Math.round(statCur.g / currentDay) : statCur.g;
                     const projected = dailyAvg * daysInMonth;
 
@@ -1878,7 +1863,6 @@
                     projEl.innerHTML = `<p class="text-xs font-bold opacity-40 text-center py-2">Aún no hay gastos para proyectar este mes.</p>`;
                 }
 
-                // --- RENDER 3: FLUJO DEL MES ---
                 document.getElementById('analytics-inc-text').textContent = fmt(statCur.i);
                 document.getElementById('analytics-exp-text').textContent = fmt(statCur.g);
                 
@@ -1886,7 +1870,7 @@
                 const barExp = document.getElementById('analytics-bar-exp');
                 const msgFlow = document.getElementById('analytics-flow-msg');
                 
-                barInc.style.width = '0%'; barExp.style.width = '0%'; // Reset
+                barInc.style.width = '0%'; barExp.style.width = '0%'; 
 
                 setTimeout(() => {
                     const totalFlow = statCur.i + statCur.g;
@@ -1912,9 +1896,8 @@
                             msgFlow.className = "text-[9px] font-black uppercase tracking-widest mt-3 text-center text-themeGreen";
                         }
                     }
-                }, 100); // Pequeño delay para la animación CSS
+                }, 100); 
 
-                // --- RENDER 4: DATOS CURIOSOS (INSIGHTS) ---
                 const insightsEl = document.getElementById('analytics-insights');
                 let maxSingleGasto = null;
                 let expensesByDate = {};
@@ -1959,7 +1942,6 @@
                     insightsEl.innerHTML = `<div class="col-span-2 text-center py-4 opacity-40 text-xs font-bold bg-iosCard-light dark:bg-iosCard-dark rounded-3xl border border-black/5">Aún no hay datos suficientes</div>`;
                 }
 
-                // --- RENDER 5: BARRAS DE CATEGORÍA (TOP GASTOS) ---
                 const catMap = {};
                 gastosMes.forEach(r => {
                     const nombreCat = r.type === 'prestamo' ? 'Préstamos' : r.category;
@@ -1980,13 +1962,12 @@
                 if (catArray.length === 0) {
                     catContainer.innerHTML = '<p class="text-center py-6 opacity-30 text-xs font-bold uppercase tracking-widest">Sin gastos registrados</p>';
                 } else {
-                    const topCats = catArray.slice(0, 5); // Solo mostramos el Top 5
+                    const topCats = catArray.slice(0, 5); 
                     catContainer.innerHTML = topCats.map(c => {
                         const pct = Math.round((c.total / totalGastosCategoria) * 100);
-                        let bgBarColor = 'bg-themeCafe'; // Base por defecto
+                        let bgBarColor = 'bg-themeCafe'; 
                         let safeColor = c.color || '';
                         
-                        // Extraer color de fondo para la barra
                         if(safeColor.includes('blue')) bgBarColor = 'bg-blue-500';
                         else if(safeColor.includes('red')) bgBarColor = 'bg-red-500';
                         else if(safeColor.includes('orange')) bgBarColor = 'bg-orange-500';
@@ -2017,7 +1998,6 @@
                     }).join('');
                 }
 
-                // Abrir Modal
                 document.getElementById('modal-analytics').classList.add('modal-active');
                 document.getElementById('overlay').classList.remove('opacity-0', 'pointer-events-none');
             
@@ -2026,9 +2006,7 @@
                 showToast("ERROR AL CARGAR EL REPORTE", 3000);
             }
         }
-        // --- FIN LÓGICA DASHBOARD ---
 
-        // --- SISTEMA FÍSICO DE ARRASTRE DE MODALES (MEJORADO) ---
         function initSwipeEvents() {
             const modales = document.querySelectorAll('.modal-sheet');
             modales.forEach(m => {
@@ -2038,15 +2016,11 @@
                 m.addEventListener('touchstart', (e) => {
                     const scrollArea = e.target.closest('.overflow-y-auto');
                     
-                    // Si el usuario toca dentro de un área con scroll y no está en la parte más alta,
-                    // no iniciamos el arrastre del modal. Dejamos que haga scroll normal.
                     if (scrollArea && scrollArea.scrollTop > 0) return;
                     
                     startY = e.touches[0].clientY;
                     isDragging = true;
                     
-                    // Quitamos la transición CSS temporalmente para que el modal se mueva
-                    // instantáneamente y se "pegue" al dedo del usuario.
                     m.style.transition = 'none'; 
                 }, { passive: true });
 
@@ -2056,8 +2030,6 @@
                     const currentY = e.touches[0].clientY;
                     const deltaY = currentY - startY;
 
-                    // Si estamos arrastrando HACIA ARRIBA (deltaY negativo) dentro del contenido,
-                    // soltamos el modal y dejamos que el navegador haga el scroll interno.
                     const scrollArea = e.target.closest('.overflow-y-auto');
                     if (scrollArea && deltaY < 0 && scrollArea.scrollTop === 0) {
                         isDragging = false;
@@ -2065,20 +2037,16 @@
                         return; 
                     }
 
-                    // MUY IMPORTANTE: Evita que la página entera rebote mientras arrastramos el modal.
                     if (e.cancelable) {
                         e.preventDefault();
                     }
 
                     if (deltaY > 0) {
-                        // Arrastrando HACIA ABAJO: El modal baja la misma cantidad de píxeles que el dedo (1 a 1).
                         m.style.transform = `translateY(${deltaY}px)`;
                     } else {
-                        // Arrastrando HACIA ARRIBA: Efecto de resistencia o "liga". 
-                        // Sube solo 1 píxel por cada 4 píxeles que el dedo sube.
                         m.style.transform = `translateY(${deltaY / 4}px)`;
                     }
-                }, { passive: false }); // Debe ser false para poder usar preventDefault()
+                }, { passive: false }); 
 
                 m.addEventListener('touchend', (e) => {
                     if (!isDragging) return;
@@ -2086,20 +2054,16 @@
                     
                     const deltaY = e.changedTouches[0].clientY - startY;
                     
-                    // Restauramos la transición para que el modal regrese a su sitio o se cierre con animación fluida.
                     m.style.transition = 'transform 0.4s cubic-bezier(0.32, 0.72, 0, 1)';
                     
-                    // Si el usuario arrastró hacia abajo más de 100 píxeles, cerramos el modal.
                     if (deltaY > 100) {
                         closeModal(m.id);
                     } else {
-                        // Si no, hacemos que vuelva rápidamente a su posición original (efecto snap).
                         m.style.transform = 'translateY(0)'; 
                     }
                 }, { passive: true });
             });
         }
-        // --- FIN SISTEMA FÍSICO ARRASTRE ---
 
         function initHorizontalSwipes() {
             const mainEl = document.getElementById('main-content');
@@ -2184,13 +2148,11 @@
             }
         }
 
-        // --- SISTEMA CENTRAL DE FORMATEO Y PRIVACIDAD ---
         const fmt = (n) => {
             if (appData.settings && appData.settings.privacyMode) return '$ ***.***';
             return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', minimumFractionDigits: 0 }).format(n);
         };
 
-        // --- GENERADOR DE AVATARES DE COLORES PARA PERSONAS ---
         function getAvatarData(name) {
             if (!name) name = '?';
             const colors = ['bg-red-500', 'bg-blue-500', 'bg-emerald-500', 'bg-amber-500', 'bg-purple-500', 'bg-pink-500', 'bg-indigo-500', 'bg-teal-500', 'bg-orange-500', 'bg-cyan-600', 'bg-rose-500'];
@@ -2306,6 +2268,32 @@
                 return;
             }
             toggleBalanceMode();
+
+            const dEl = document.getElementById('dash-debito');
+            const eEl = document.getElementById('dash-efectivo');
+            const dLbl = document.getElementById('dash-debito-lbl');
+            const eLbl = document.getElementById('dash-efectivo-lbl');
+
+            if (dEl && eEl) {
+                const listMonth = appData.records.filter(r => {
+                    const d = new Date(r.date + 'T00:00:00');
+                    return d.getMonth() === curDate.getMonth() && d.getFullYear() === curDate.getFullYear();
+                });
+                const sm = getStats(listMonth);
+                const sg = getStats(appData.records);
+
+                if (viewGlobalBalance) {
+                    dEl.textContent = fmt(sg.bDeb);
+                    eEl.textContent = fmt(sg.bEf);
+                    dLbl.textContent = 'DÉBITO GLOBAL';
+                    eLbl.textContent = 'EFECTIVO GLOBAL';
+                } else {
+                    dEl.textContent = fmt(sm.bDeb);
+                    eEl.textContent = fmt(sm.bEf);
+                    dLbl.textContent = 'DÉBITO';
+                    eLbl.textContent = 'EFECTIVO';
+                }
+            }
         }
 
         function renderDashboard(el, sm, sg, data) {
@@ -2342,68 +2330,75 @@
             }
 
             el.innerHTML = `
-                <div class="mb-6 h-[180px] w-full" style="perspective: 1000px;">
+                <div class="mb-3 h-[180px] w-full" style="perspective: 1000px;">
                     <div id="balance-card" class="flip-card ${viewGlobalBalance ? 'is-flipped' : ''}" onclick="handleCardClick()">
-                        <div class="flip-card-face flip-card-front flex flex-col shadow-xl">
+                        <div class="flip-card-face flip-card-front flex flex-col shadow-xl overflow-hidden">
                             <p class="text-[9px] font-black uppercase opacity-60 tracking-widest mb-1">Balance Mensual</p>
                             <div class="flex items-end justify-between mb-5 w-full">
-                                <h2 class="text-3xl font-black tracking-tight dark:text-white leading-none">${fmt(sm.b)}</h2>
+                                <h2 class="font-black tracking-tight dark:text-white leading-none truncate w-full pr-2" style="font-size: clamp(24px, 7vw, 30px);">${fmt(sm.b)}</h2>
                                 ${sm.p > 0 && !appData.settings.privacyMode ? `
-                                <div class="flex flex-col text-right pb-0.5">
+                                <div class="flex flex-col text-right pb-0.5 shrink-0">
                                     <span class="text-[7px] font-black uppercase opacity-50 tracking-widest leading-none mb-1">Total + Préstamos</span>
                                     <span class="text-sm font-black opacity-75 leading-none">${fmt(sm.b + sm.p)}</span>
                                 </div>` : ''}
                             </div>
                             <div class="flex gap-3">
-                                <div class="flex-1 bg-white/10 p-3 rounded-2xl border border-white/5">
+                                <div class="flex-1 bg-white/10 p-3 rounded-2xl border border-white/5 overflow-hidden">
                                     <p class="text-[8px] uppercase font-bold opacity-60">Entradas</p>
-                                    <p class="font-bold text-base dark:text-white">${fmt(sm.i)}</p>
+                                    <p class="font-bold text-base dark:text-white truncate w-full">${fmt(sm.i)}</p>
                                 </div>
-                                <div class="flex-1 bg-white/10 p-3 rounded-2xl border border-white/5">
+                                <div class="flex-1 bg-white/10 p-3 rounded-2xl border border-white/5 overflow-hidden">
                                     <p class="text-[8px] uppercase font-bold opacity-60">Salidas</p>
-                                    <p class="font-bold text-base dark:text-white">${fmt(sm.g)}</p>
+                                    <p class="font-bold text-base dark:text-white truncate w-full">${fmt(sm.g)}</p>
                                 </div>
                             </div>
                         </div>
-                        <div class="flip-card-face flip-card-back shadow-xl">
+                        <div class="flip-card-face flip-card-back shadow-xl overflow-hidden">
                             <p class="text-[9px] font-black uppercase opacity-60 tracking-widest mb-1">Balance Global</p>
                             <div class="flex items-end justify-between mb-5 w-full">
-                                <h2 class="text-3xl font-black tracking-tight dark:text-white leading-none">${fmt(sg.b)}</h2>
+                                <h2 class="font-black tracking-tight dark:text-white leading-none truncate w-full pr-2" style="font-size: clamp(24px, 7vw, 30px);">${fmt(sg.b)}</h2>
                                 ${sg.p > 0 && !appData.settings.privacyMode ? `
-                                <div class="flex flex-col text-right pb-0.5">
+                                <div class="flex flex-col text-right pb-0.5 shrink-0">
                                     <span class="text-[7px] font-black uppercase opacity-50 tracking-widest leading-none mb-1">Total + Préstamos</span>
                                     <span class="text-sm font-black opacity-75 leading-none">${fmt(sg.b + sg.p)}</span>
                                 </div>` : ''}
                             </div>
                             <div class="flex gap-3">
-                                <div class="flex-1 bg-white/10 p-3 rounded-2xl border border-white/5">
-                                    <p class="text-[8px] uppercase font-bold opacity-60">Entradas</p>
-                                    <p class="font-bold text-base dark:text-white">${fmt(sm.i)}</p>
-                                </div>
-                                <div class="flex-1 bg-white/10 p-3 rounded-2xl border border-white/5">
-                                    <p class="text-[8px] uppercase font-bold opacity-60">Salidas</p>
-                                    <p class="font-bold text-base dark:text-white">${fmt(sm.g)}</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="flip-card-face flip-card-back shadow-xl">
-                            <p class="text-[9px] font-black uppercase opacity-60 tracking-widest mb-1">Balance Global</p>
-                            <div class="flex items-end justify-between mb-5 w-full">
-                                <h2 class="text-3xl font-black tracking-tight dark:text-white leading-none">${fmt(sg.b)}</h2>
-                            </div>
-                            <div class="flex gap-3">
-                                <div class="flex-1 bg-white/10 p-3 rounded-2xl border border-white/5">
+                                <div class="flex-1 bg-white/10 p-3 rounded-2xl border border-white/5 overflow-hidden">
                                     <p class="text-[8px] uppercase font-bold opacity-60">Entradas Globales</p>
-                                    <p class="font-bold text-base dark:text-white">${fmt(sg.i)}</p>
+                                    <p class="font-bold text-base dark:text-white truncate w-full">${fmt(sg.i)}</p>
                                 </div>
-                                <div class="flex-1 bg-white/10 p-3 rounded-2xl border border-white/5">
+                                <div class="flex-1 bg-white/10 p-3 rounded-2xl border border-white/5 overflow-hidden">
                                     <p class="text-[8px] uppercase font-bold opacity-60">Salidas Globales</p>
-                                    <p class="font-bold text-base dark:text-white">${fmt(sg.g)}</p>
+                                    <p class="font-bold text-base dark:text-white truncate w-full">${fmt(sg.g)}</p>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
+
+                <!-- NUEVAS TARJETAS: DÉBITO Y EFECTIVO (Diseño Slim Horizontal) -->
+                <div class="flex gap-2 mb-6 w-full">
+                    <div class="flex-1 bg-iosCard-light dark:bg-iosCard-dark p-2.5 rounded-2xl shadow-sm border border-black/[0.03] dark:border-white/[0.03] flex items-center gap-2 transition-all min-w-0">
+                        <div class="w-7 h-7 rounded-[10px] bg-gray-200/50 dark:bg-white/5 flex items-center justify-center text-gray-500 dark:text-gray-400 shrink-0">
+                            <i class="ph-fill ph-credit-card text-base"></i>
+                        </div>
+                        <div class="flex flex-col min-w-0 flex-1">
+                            <span id="dash-debito-lbl" class="text-[7px] font-black uppercase tracking-widest text-gray-400 leading-none truncate mb-0.5 transition-all">${viewGlobalBalance ? 'DÉBITO GLOBAL' : 'DÉBITO'}</span>
+                            <span id="dash-debito" class="font-black text-gray-900 dark:text-white truncate w-full leading-none transition-all" style="font-size: clamp(10px, 3.2vw, 15px); letter-spacing: -0.5px;">${fmt(viewGlobalBalance ? sg.bDeb : sm.bDeb)}</span>
+                        </div>
+                    </div>
+                    <div class="flex-1 bg-iosCard-light dark:bg-iosCard-dark p-2.5 rounded-2xl shadow-sm border border-black/[0.03] dark:border-white/[0.03] flex items-center gap-2 transition-all min-w-0">
+                        <div class="w-7 h-7 rounded-[10px] bg-gray-200/50 dark:bg-white/5 flex items-center justify-center text-gray-500 dark:text-gray-400 shrink-0">
+                            <i class="ph-fill ph-money text-base"></i>
+                        </div>
+                        <div class="flex flex-col min-w-0 flex-1">
+                            <span id="dash-efectivo-lbl" class="text-[7px] font-black uppercase tracking-widest text-gray-400 leading-none truncate mb-0.5 transition-all">${viewGlobalBalance ? 'EFECTIVO GLOBAL' : 'EFECTIVO'}</span>
+                            <span id="dash-efectivo" class="font-black text-gray-900 dark:text-white truncate w-full leading-none transition-all" style="font-size: clamp(10px, 3.2vw, 15px); letter-spacing: -0.5px;">${fmt(viewGlobalBalance ? sg.bEf : sm.bEf)}</span>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="flex justify-between items-center mb-4 px-1">
                     <h3 class="text-[9px] font-black uppercase opacity-40 tracking-widest">Todas las actividades</h3>
                 </div>
@@ -2418,7 +2413,6 @@
                 </div>` : '<div class="pb-8"></div>'}
             `;
 
-            // --- LÓGICA MANTENER PRESIONADO EL BALANCE ---
             const cardEl = document.getElementById('balance-card');
             let cardTimer;
             let startY = 0;
@@ -2431,10 +2425,10 @@
                 }
                 blockCardClick = false;
                 cardTimer = setTimeout(() => {
-                    blockCardClick = true; // Bloquea el giro
+                    blockCardClick = true; 
                     if(navigator.vibrate) navigator.vibrate(50);
                     togglePrivacyMode();
-                }, 400); // 400ms para que se sienta un poquito más rápido
+                }, 400); 
             };
             
             const cancelCardHold = (e) => {
@@ -2445,7 +2439,6 @@
                 if (e.touches) {
                     const diffX = Math.abs(e.touches[0].clientX - startX);
                     const diffY = Math.abs(e.touches[0].clientY - startY);
-                    // Tolerancia de 10px para que los micromovimientos del dedo no cancelen el modo
                     if (diffX > 10 || diffY > 10) clearTimeout(cardTimer);
                 } else {
                     clearTimeout(cardTimer);
@@ -2581,7 +2574,6 @@
 
         function renderList(el, tab, data) {
             const isIngreso = tab === 'ingresos';
-            // Solo mostramos préstamos pagados en ingresos SI NO tienen abonos (compatibilidad antigua)
             const filtered = data.filter(r => isIngreso ? (r.type === 'ingreso' || (r.type === 'prestamo' && r.status === 'paid' && !r.hasAbonos)) : (r.type === 'gasto' || r.type === 'prestamo'));
             
             let extraHtml = '';
@@ -2594,21 +2586,21 @@
                 });
                 
                 extraHtml = `
-                    <div class="flex justify-center gap-6 mt-4 pt-4 border-t border-black/5 dark:border-white/5">
-                        <div class="flex flex-col items-center">
+                    <div class="flex justify-center gap-4 mt-4 pt-4 border-t border-black/5 dark:border-white/5 w-full">
+                        <div class="flex flex-col items-center flex-1 min-w-0">
                             <div class="flex items-center gap-1 text-gray-500 dark:text-gray-400 mb-0.5">
                                 <i class="ph-fill ph-credit-card text-lg"></i>
                                 <span class="text-[9px] font-black uppercase tracking-widest">Débito</span>
                             </div>
-                            <span class="font-bold text-sm text-themeGreen dark:text-white">${fmt(totalDebito)}</span>
+                            <span class="font-bold text-themeGreen dark:text-white truncate w-full text-center" style="font-size: clamp(11px, 3.5vw, 14px); letter-spacing: -0.5px;">${fmt(totalDebito)}</span>
                         </div>
                         <div class="w-px bg-black/5 dark:bg-white/5"></div>
-                        <div class="flex flex-col items-center">
+                        <div class="flex flex-col items-center flex-1 min-w-0">
                             <div class="flex items-center gap-1 text-gray-500 dark:text-gray-400 mb-0.5">
                                 <i class="ph-fill ph-money text-lg"></i>
                                 <span class="text-[9px] font-black uppercase tracking-widest">Efectivo</span>
                             </div>
-                            <span class="font-bold text-sm text-themeGreen dark:text-white">${fmt(totalEfectivo)}</span>
+                            <span class="font-bold text-themeGreen dark:text-white truncate w-full text-center" style="font-size: clamp(11px, 3.5vw, 14px); letter-spacing: -0.5px;">${fmt(totalEfectivo)}</span>
                         </div>
                     </div>
                 `;
@@ -2617,7 +2609,7 @@
             el.innerHTML = `
                 <div class="bg-iosCard-light dark:bg-iosCard-dark p-8 rounded-3xl text-center mb-6 border border-black/[0.03] dark:border-white/[0.03]">
                     <p class="text-[9px] font-black opacity-40 uppercase tracking-widest mb-1">${isIngreso ? 'INGRESOS TOTALES' : 'GASTOS TOTALES'}</p>
-                    <h2 class="text-3xl font-black ${isIngreso ? 'text-themeGreen dark:text-white' : 'text-themeCafe dark:text-white'}">${fmt(filtered.reduce((s,r) => s + r.amount, 0))}</h2>
+                    <h2 class="font-black truncate w-full px-2 ${isIngreso ? 'text-themeGreen dark:text-white' : 'text-themeCafe dark:text-white'}" style="font-size: clamp(24px, 7vw, 30px);">${fmt(filtered.reduce((s,r) => s + r.amount, 0))}</h2>
                     ${extraHtml}
                 </div>
                 <div class="space-y-2 pb-10 w-full flex flex-col items-center">
@@ -2779,7 +2771,6 @@
             const detailBox = document.getElementById('detalle-box');
             const pmBox = document.getElementById('pay-method-box');
             
-            // --- ACTUALIZACIÓN BOTÓN IA DINÁMICO ---
             const aiBtn = document.getElementById('btn-ai-action');
             const aiIcon = document.getElementById('icon-ai-action');
             
@@ -2788,7 +2779,6 @@
 
             if (aiBtn && aiIcon) {
                 if (mode === 'gasto') {
-                    // MODO GASTO: Botón Magia / IA
                     if (!useVoice && !useCam) {
                         aiBtn.classList.add('hidden');
                     } else {
@@ -2810,7 +2800,6 @@
                         };
                     }
                 } else {
-                    // MODO INGRESO Y PRESTAMO: Botón Micrófono
                     if (!useVoice) {
                         aiBtn.classList.add('hidden');
                     } else {
@@ -2889,7 +2878,8 @@
                 document.getElementById('detail-date').textContent = `${parseInt(d)} de ${mNames[parseInt(m)-1]} ${y}`;
             }
 
-            document.getElementById('detail-amount').className = `text-4xl font-black tracking-tight mb-6 ${isPaidPrestamo ? 'text-themeGreen' : (!isOut ? 'text-themeGreen' : 'text-gray-900 dark:text-white')}`;
+            document.getElementById('detail-amount').className = `font-black tracking-tight mb-6 truncate w-full px-4 ${isPaidPrestamo ? 'text-themeGreen' : (!isOut ? 'text-themeGreen' : 'text-gray-900 dark:text-white')}`;
+            document.getElementById('detail-amount').style.fontSize = "clamp(24px, 7vw, 36px)";
             document.getElementById('detail-amount').textContent = (isPaidPrestamo ? '+' : (!isOut ? '+' : '-')) + ' ' + fmt(r.amount);
             
             const textCont = document.getElementById('detail-text-container');
@@ -3051,7 +3041,6 @@
         }
         function openSettings() { document.getElementById('modal-settings').classList.add('modal-active'); document.getElementById('overlay').classList.remove('opacity-0', 'pointer-events-none'); }
         
-        // --- TOAST MEJORADO ---
         function showToast(m, duration = 2000) { 
             const t = document.getElementById('toast'); 
             t.textContent = m; 
@@ -3099,15 +3088,18 @@
             reader.readAsText(file);
         });
 
-        function clearAllData() {
-            if(confirm('¿Estás seguro de que quieres eliminar TODOS los registros? Esta acción no se puede deshacer.')) {
-                appData.records = [];
-                loadedPastMonths = 0;
-                save();
-                closeAllModals();
-                navigate('dashboard');
-                showToast('DATOS BORRADOS');
-            }
+        function openClearAllModal() {
+            document.getElementById('modal-clear-all').classList.add('modal-active');
+            document.getElementById('overlay').classList.remove('opacity-0', 'pointer-events-none');
+        }
+
+        function executeClearAll() {
+            appData.records = [];
+            loadedPastMonths = 0;
+            save();
+            closeAllModals();
+            navigate('dashboard');
+            showToast('DATOS BORRADOS');
         }
 
         document.getElementById('in-amount-formatted').addEventListener('input', (e) => {
@@ -3133,7 +3125,6 @@
             updateCameraState();
             setTimeout(processOverdueLoans, 800);
 
-            // --- LÓGICA MANTENER PRESIONADO EL TÍTULO ---
             const titleEl = document.getElementById('app-title');
             let titleTimer;
             const startTitleHold = () => {
