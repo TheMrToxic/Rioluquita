@@ -744,37 +744,54 @@
             </div>
         </div>
 
-        <!-- MODAL: GESTOR DE CATEGORÍAS -->
-        <div id="modal-custom-cats" class="modal-sheet z-[70]">
+        <!-- MODAL: GESTOR DE CATEGORÍAS MEJORADO -->
+        <div id="modal-custom-cats" class="modal-sheet z-[70]" style="height: 94%;">
             <div class="modal-handle-container"><div class="modal-handle"></div></div>
-            <div class="px-6 flex flex-col h-full pb-8">
-                <h3 class="text-2xl font-black tracking-tight mb-4 text-center">Mis Categorías</h3>
+            <div class="px-5 flex flex-col h-full pb-6">
+                <h3 class="text-2xl font-black tracking-tight mb-5 text-center mt-1">Mis Categorías</h3>
                 
-                <div class="bg-gray-100 dark:bg-white/5 p-1 rounded-2xl flex mb-4 flex-shrink-0">
-                    <button type="button" onclick="setCustomCatTab('gasto')" id="btn-cc-gasto" class="flex-1 py-2.5 text-[10px] font-black rounded-xl transition-all bg-white dark:bg-white/20 shadow-sm">GASTOS</button>
-                    <button type="button" onclick="setCustomCatTab('ingreso')" id="btn-cc-ingreso" class="flex-1 py-2.5 text-[10px] font-black rounded-xl transition-all opacity-40">INGRESOS</button>
+                <div class="bg-gray-100 dark:bg-white/5 p-1.5 rounded-2xl flex mb-4 flex-shrink-0">
+                    <button type="button" onclick="setCustomCatTab('gasto')" id="btn-cc-gasto" class="flex-1 py-2.5 text-[11px] font-black rounded-xl transition-all bg-white dark:bg-white/20 shadow-sm text-gray-900 dark:text-white">GASTOS</button>
+                    <button type="button" onclick="setCustomCatTab('ingreso')" id="btn-cc-ingreso" class="flex-1 py-2.5 text-[11px] font-black rounded-xl transition-all opacity-40 text-gray-500 dark:text-gray-300">INGRESOS</button>
                 </div>
 
-                <div id="custom-cat-list" class="space-y-2 mb-4 flex-1 overflow-y-auto no-scrollbar min-h-[100px]"></div>
+                <div id="custom-cat-list" class="space-y-2.5 mb-4 flex-1 overflow-y-auto no-scrollbar pb-2 min-h-[100px]"></div>
 
-                <div class="mt-auto border-t border-black/5 dark:border-white/5 pt-4">
-                    <h4 id="cc-form-title" class="text-[9px] font-black uppercase opacity-40 tracking-widest mb-2">Crear Nueva</h4>
-                    <div class="ios-input-full mb-2">
-                        <input type="text" id="cc-name" class="ios-input !text-[14px]" placeholder="Nombre de categoría">
+                <!-- NEW FORM UI -->
+                <div class="bg-gray-50 dark:bg-white/5 border border-black/5 dark:border-white/10 p-5 rounded-[28px] shadow-sm flex-shrink-0 transition-all relative">
+                    
+                    <div class="flex justify-between items-center mb-4">
+                        <h4 id="cc-form-title" class="text-[10px] font-black uppercase opacity-60 tracking-widest text-themeGreen dark:text-themeGreen-light flex items-center gap-1.5">
+                            <i class="ph-fill ph-sparkle text-sm"></i> CREAR NUEVA
+                        </h4>
+                        <button onclick="cancelEditCustomCat()" id="cc-btn-cancel" class="hidden w-8 h-8 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center transition-all active:scale-90"><i class="ph-bold ph-x text-lg"></i></button>
                     </div>
                     
-                    <div class="ios-input-full mb-2 flex items-center gap-2 !py-2 !bg-gray-200/50 dark:!bg-white/5 border border-black/5 dark:border-white/5">
-                        <i class="ph ph-magnifying-glass text-gray-400 text-lg"></i>
-                        <input type="text" id="cc-icon-search" class="ios-input !text-[13px] !font-medium" placeholder="Buscar icono (ej: comida, mascota...)" oninput="filterCcIcons()">
+                    <div class="space-y-3.5">
+                        <div class="ios-input-full !py-3.5 !px-4 !bg-white dark:!bg-black/20 border border-black/5 dark:border-white/5 focus-within:border-themeGreen/50 focus-within:ring-2 focus-within:ring-themeGreen/20 transition-all rounded-2xl">
+                            <input type="text" id="cc-name" class="ios-input !text-[16px] font-bold" placeholder="Nombre de categoría">
+                        </div>
+                        
+                        <div class="ios-input-full flex items-center gap-2 !py-2.5 !px-4 !bg-white dark:!bg-black/20 border border-black/5 dark:border-white/5 rounded-2xl">
+                            <i class="ph ph-magnifying-glass text-gray-400 text-lg"></i>
+                            <input type="text" id="cc-icon-search" class="ios-input !text-[14px] !font-medium" placeholder="Buscar icono (ej: comida...)" oninput="filterCcIcons()">
+                        </div>
+                        
+                        <div>
+                            <p class="text-[9px] font-black uppercase tracking-widest opacity-40 mb-2 ml-1">Selecciona Icono</p>
+                            <div class="flex gap-3 overflow-x-auto no-scrollbar pb-2 pt-1 px-1" id="cc-icon-sel"></div>
+                        </div>
+
+                        <div>
+                            <p class="text-[9px] font-black uppercase tracking-widest opacity-40 mb-2 ml-1">Color del Icono</p>
+                            <div class="flex gap-3 overflow-x-auto no-scrollbar pb-2 pt-1 px-1" id="cc-color-sel"></div>
+                        </div>
                     </div>
-                    
-                    <div class="flex gap-3 mb-2 overflow-x-auto no-scrollbar pb-1" id="cc-icon-sel"></div>
-                    <div class="flex gap-3 mb-3 overflow-x-auto no-scrollbar pb-1" id="cc-color-sel"></div>
-                    
-                    <div class="flex gap-2">
-                        <button onclick="saveCustomCat()" id="cc-btn-save" class="flex-1 bg-themeGreen text-white font-black py-3.5 rounded-2xl shadow-lg active:scale-95 transition-transform tracking-widest uppercase text-[10px]">Guardar</button>
-                        <button onclick="cancelEditCustomCat()" id="cc-btn-cancel" class="hidden px-6 bg-gray-200 dark:bg-white/10 text-gray-500 dark:text-gray-300 font-black rounded-2xl active:scale-95 transition-all text-[10px] uppercase tracking-widest"><i class="ph-bold ph-x text-lg"></i></button>
-                    </div>
+
+                    <button onclick="saveCustomCat()" id="cc-btn-save" class="w-full mt-5 bg-themeGreen text-white font-black py-4 rounded-2xl shadow-lg shadow-themeGreen/20 active:scale-95 transition-all tracking-widest uppercase text-[11px] flex items-center justify-center gap-2">
+                        <i class="ph-bold ph-floppy-disk text-xl"></i>
+                        <span>GUARDAR CATEGORÍA</span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -1673,8 +1690,8 @@
 
         function setCustomCatTab(tab) {
             ccCurrentTab = tab;
-            document.getElementById('btn-cc-gasto').className = tab === 'gasto' ? "flex-1 py-2.5 text-[10px] font-black rounded-xl transition-all bg-white dark:bg-white/20 shadow-sm" : "flex-1 py-2.5 text-[10px] font-black rounded-xl transition-all opacity-40";
-            document.getElementById('btn-cc-ingreso').className = tab === 'ingreso' ? "flex-1 py-2.5 text-[10px] font-black rounded-xl transition-all bg-white dark:bg-white/20 shadow-sm" : "flex-1 py-2.5 text-[10px] font-black rounded-xl transition-all opacity-40";
+            document.getElementById('btn-cc-gasto').className = tab === 'gasto' ? "flex-1 py-2.5 text-[11px] font-black rounded-xl transition-all bg-white dark:bg-white/20 shadow-sm text-gray-900 dark:text-white" : "flex-1 py-2.5 text-[11px] font-black rounded-xl transition-all opacity-40 text-gray-500 dark:text-gray-300";
+            document.getElementById('btn-cc-ingreso').className = tab === 'ingreso' ? "flex-1 py-2.5 text-[11px] font-black rounded-xl transition-all bg-white dark:bg-white/20 shadow-sm text-gray-900 dark:text-white" : "flex-1 py-2.5 text-[11px] font-black rounded-xl transition-all opacity-40 text-gray-500 dark:text-gray-300";
             cancelEditCustomCat();
             renderCustomCatList();
         }
@@ -1696,12 +1713,12 @@
             } else {
                 iconEl.innerHTML = ccFilteredIcons.map(iconObj => {
                     const i = iconObj.i;
-                    return `<button onclick="ccSelectedIcon='${i}'; renderCcSelectors()" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-xl transition-all ${ccSelectedIcon === i ? 'border-[3px] border-themeGreen bg-themeGreen/10 text-themeGreen dark:text-themeGreen-light' : 'border-[3px] border-transparent bg-gray-100 dark:bg-white/5 opacity-50 text-gray-600 dark:text-gray-300'}"><i class="${i}"></i></button>`;
+                    return `<button onclick="ccSelectedIcon='${i}'; renderCcSelectors()" class="flex-shrink-0 w-11 h-11 rounded-[14px] flex items-center justify-center text-[22px] transition-all ${ccSelectedIcon === i ? 'border-[3px] border-themeGreen bg-themeGreen/10 text-themeGreen dark:text-themeGreen-light scale-105 shadow-sm' : 'border-[3px] border-transparent bg-white dark:bg-white/5 opacity-60 text-gray-600 dark:text-gray-300'}"><i class="${i}"></i></button>`;
                 }).join('');
             }
             
             const colorEl = document.getElementById('cc-color-sel');
-            colorEl.innerHTML = ccColors.map(c => `<button onclick="ccSelectedColor='${c}'; renderCcSelectors()" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center transition-all ${ccSelectedColor === c ? 'border-[3px] border-themeGreen bg-themeGreen/10' : 'border-[3px] border-transparent bg-gray-100 dark:bg-white/5 opacity-50'}"><div class="w-5 h-5 rounded-full bg-current ${c}"></div></button>`).join('');
+            colorEl.innerHTML = ccColors.map(c => `<button onclick="ccSelectedColor='${c}'; renderCcSelectors()" class="flex-shrink-0 w-11 h-11 rounded-[14px] flex items-center justify-center transition-all ${ccSelectedColor === c ? 'border-[3px] border-themeGreen bg-themeGreen/10 scale-105 shadow-sm' : 'border-[3px] border-transparent bg-white dark:bg-white/5 opacity-60'}"><div class="w-6 h-6 rounded-full bg-current ${c}"></div></button>`).join('');
         }
 
         function renderCustomCatList() {
@@ -1727,8 +1744,12 @@
             ccSelectedIcon = cat.i;
             ccSelectedColor = cat.c;
             
-            document.getElementById('cc-form-title').textContent = 'EDITAR CATEGORÍA';
-            document.getElementById('cc-btn-save').textContent = 'ACTUALIZAR';
+            document.getElementById('cc-form-title').innerHTML = '<i class="ph-fill ph-pencil-simple text-sm"></i> EDITAR CATEGORÍA';
+            
+            const btnSave = document.getElementById('cc-btn-save');
+            btnSave.innerHTML = '<i class="ph-bold ph-arrows-clockwise text-xl"></i><span>ACTUALIZAR CAMBIOS</span>';
+            btnSave.className = "w-full mt-5 bg-blue-500 text-white font-black py-4 rounded-2xl shadow-lg shadow-blue-500/20 active:scale-95 transition-all tracking-widest uppercase text-[11px] flex items-center justify-center gap-2";
+            
             document.getElementById('cc-btn-cancel').classList.remove('hidden');
             
             document.getElementById('cc-icon-search').value = '';
@@ -1742,8 +1763,12 @@
             ccSelectedIcon = 'ph-fill ph-star';
             ccSelectedColor = 'text-blue-500';
             
-            document.getElementById('cc-form-title').textContent = 'CREAR NUEVA';
-            document.getElementById('cc-btn-save').textContent = 'GUARDAR';
+            document.getElementById('cc-form-title').innerHTML = '<i class="ph-fill ph-sparkle text-sm"></i> CREAR NUEVA';
+            
+            const btnSave = document.getElementById('cc-btn-save');
+            btnSave.innerHTML = '<i class="ph-bold ph-floppy-disk text-xl"></i><span>GUARDAR CATEGORÍA</span>';
+            btnSave.className = "w-full mt-5 bg-themeGreen text-white font-black py-4 rounded-2xl shadow-lg shadow-themeGreen/20 active:scale-95 transition-all tracking-widest uppercase text-[11px] flex items-center justify-center gap-2";
+            
             document.getElementById('cc-btn-cancel').classList.add('hidden');
             
             filterCcIcons();
