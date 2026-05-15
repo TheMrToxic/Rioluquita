@@ -137,14 +137,13 @@
             border-top-left-radius: 32px;
             border-top-right-radius: 32px;
             box-shadow: 0 0 0 transparent;
-            touch-action: none;
             backface-visibility: hidden;
         }
         .dark .modal-sheet { background-color: rgb(var(--c-card-dark)); }
 
         /* Permite scroll nativo táctil en elementos con scroll dentro del modal */
-        .overflow-x-auto { touch-action: pan-x !important; }
-        .overflow-y-auto { touch-action: pan-y !important; }
+        .overflow-x-auto { touch-action: pan-x !important; -webkit-overflow-scrolling: touch; }
+        .overflow-y-auto { touch-action: pan-y !important; -webkit-overflow-scrolling: touch; }
         
         #modal-add, #modal-datepicker, #modal-abono, #modal-custom-cats, #modal-api-key, #modal-theme, #modal-analytics { height: 92%; }
         .modal-active { transform: translateY(0); box-shadow: 0 -10px 40px rgba(0,0,0,0.2); }
