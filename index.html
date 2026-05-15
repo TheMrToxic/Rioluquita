@@ -743,32 +743,32 @@
         <!-- MODAL: GESTOR DE CATEGORÍAS PERSONALIZADAS -->
         <div id="modal-custom-cats" class="modal-sheet z-[70]">
             <div class="modal-handle-container"><div class="modal-handle"></div></div>
-            <div class="px-6 flex flex-col h-full pb-6">
-                <h3 class="text-2xl font-black tracking-tight mb-6 text-center">Mis Categorías</h3>
+            <div class="px-6 flex flex-col h-full pb-8">
+                <h3 class="text-2xl font-black tracking-tight mb-4 text-center">Mis Categorías</h3>
                 
-                <div class="bg-gray-100 dark:bg-white/5 p-1 rounded-2xl flex mb-6 flex-shrink-0">
+                <div class="bg-gray-100 dark:bg-white/5 p-1 rounded-2xl flex mb-4 flex-shrink-0">
                     <button type="button" onclick="setCustomCatTab('gasto')" id="btn-cc-gasto" class="flex-1 py-2.5 text-[10px] font-black rounded-xl transition-all bg-white dark:bg-white/20 shadow-sm">GASTOS</button>
                     <button type="button" onclick="setCustomCatTab('ingreso')" id="btn-cc-ingreso" class="flex-1 py-2.5 text-[10px] font-black rounded-xl transition-all opacity-40">INGRESOS</button>
                 </div>
 
-                <div id="custom-cat-list" class="space-y-2 mb-6 flex-1 overflow-y-auto no-scrollbar"></div>
+                <div id="custom-cat-list" class="space-y-2 mb-4 flex-1 overflow-y-auto no-scrollbar min-h-[100px]"></div>
 
-                <div class="mt-auto border-t border-black/5 dark:border-white/5 pt-6">
-                    <h4 id="cc-form-title" class="text-[9px] font-black uppercase opacity-40 tracking-widest mb-3">Crear Nueva</h4>
-                    <div class="ios-input-full mb-3">
+                <div class="mt-auto border-t border-black/5 dark:border-white/5 pt-4">
+                    <h4 id="cc-form-title" class="text-[9px] font-black uppercase opacity-40 tracking-widest mb-2">Crear Nueva</h4>
+                    <div class="ios-input-full mb-2">
                         <input type="text" id="cc-name" class="ios-input !text-[14px]" placeholder="Nombre de categoría">
                     </div>
                     
-                    <div class="ios-input-full mb-3 flex items-center gap-2 !py-2.5 !bg-gray-200/50 dark:!bg-white/5 border border-black/5 dark:border-white/5">
+                    <div class="ios-input-full mb-2 flex items-center gap-2 !py-2 !bg-gray-200/50 dark:!bg-white/5 border border-black/5 dark:border-white/5">
                         <i class="ph ph-magnifying-glass text-gray-400 text-lg"></i>
                         <input type="text" id="cc-icon-search" class="ios-input !text-[13px] !font-medium" placeholder="Buscar icono (ej: comida, mascota, luz...)" oninput="filterCcIcons()">
                     </div>
                     
-                    <div class="flex gap-3 mb-3 overflow-x-auto no-scrollbar pb-2" id="cc-icon-sel"></div>
-                    <div class="flex gap-3 mb-4 overflow-x-auto no-scrollbar pb-2" id="cc-color-sel"></div>
+                    <div class="flex gap-3 mb-2 overflow-x-auto no-scrollbar pb-1" id="cc-icon-sel"></div>
+                    <div class="flex gap-3 mb-3 overflow-x-auto no-scrollbar pb-1" id="cc-color-sel"></div>
                     
                     <div class="flex gap-2">
-                        <button onclick="saveCustomCat()" id="cc-btn-save" class="flex-1 bg-themeGreen text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-transform tracking-widest uppercase text-[10px]">Guardar</button>
+                        <button onclick="saveCustomCat()" id="cc-btn-save" class="flex-1 bg-themeGreen text-white font-black py-3.5 rounded-2xl shadow-lg active:scale-95 transition-transform tracking-widest uppercase text-[10px]">Guardar</button>
                         <button onclick="cancelEditCustomCat()" id="cc-btn-cancel" class="hidden px-6 bg-gray-200 dark:bg-white/10 text-gray-500 dark:text-gray-300 font-black rounded-2xl active:scale-95 transition-all text-[10px] uppercase tracking-widest"><i class="ph-bold ph-x text-lg"></i></button>
                     </div>
                 </div>
@@ -982,7 +982,6 @@
         }
 
         function openThemeModal() {
-            closeModal('modal-settings');
             renderThemePresets();
             
             const t = appData.settings.colorTheme || 'classic';
@@ -1136,7 +1135,10 @@
             setTimeout(() => { blockCardClick = false; }, 300);
         }
 
-        function updatePrivacyIcon() {
+        // AQUI SE CORRIGIÓ EL NOMBRE DE LA FUNCION DE LA API KEY
+        function openApiModal() {
+            document.getElementById('api-key-input').value = appData.settings.apiKey || '';
+            updateAiTogglesUI();
             document.getElementById('modal-api-key').classList.add('modal-active');
             document.getElementById('overlay').classList.remove('opacity-0', 'pointer-events-none');
         }
@@ -1784,7 +1786,7 @@
         // --- INICIO LÓGICA DASHBOARD / ANÁLISIS MEJORADO ---
         function openAnalyticsModal() {
             try {
-                closeModal('modal-settings'); // Cierra ajustes para abrir análisis limpiecito
+                // Se removió el closeModal('modal-settings') para que se apilen correctamente
                 
                 const mNombre = mNames[curDate.getMonth()];
                 document.getElementById('analytics-month-name').textContent = mNombre;
