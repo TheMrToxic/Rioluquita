@@ -292,12 +292,10 @@
         
         <!-- PANTALLA DE LOGIN PREMIUM -->
         <div id="login-screen" class="fixed inset-0 z-[200] flex flex-col items-center justify-center transition-all duration-700 bg-[#f8f9fa] dark:bg-[#0a0a0c] overflow-hidden">
-            <!-- Esferas difuminadas premium -->
             <div class="absolute top-[-20%] left-[-20%] w-[80vw] h-[80vw] bg-themeGreen/20 dark:bg-themeGreen/30 blur-[100px] rounded-full pointer-events-none transition-all duration-1000" id="login-blob-1"></div>
             <div class="absolute bottom-[-10%] right-[-20%] w-[70vw] h-[70vw] bg-themeCafe/20 dark:bg-themeCafe/30 blur-[100px] rounded-full pointer-events-none transition-all duration-1000" id="login-blob-2"></div>
             
             <div class="z-10 w-full px-10 flex flex-col items-center mb-10">
-                <!-- Ícono / Logo Minimalista -->
                 <div class="w-20 h-20 bg-gradient-to-br from-gray-800 to-black dark:from-white dark:to-gray-300 text-white dark:text-black rounded-3xl flex items-center justify-center shadow-2xl mb-8 relative">
                     <i class="ph-fill ph-wallet text-[40px]"></i>
                 </div>
@@ -306,7 +304,6 @@
                 <p class="opacity-40 text-[10px] font-bold uppercase tracking-[0.25em] mb-10 text-center">Acceso Privado</p>
 
                 <form id="login-form" class="w-full flex flex-col gap-3.5">
-                    
                     <div class="relative">
                         <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                             <i class="ph-fill ph-envelope-simple text-gray-400 dark:text-gray-500 text-lg"></i>
@@ -490,6 +487,24 @@
             </div>
         </div>
 
+        <!-- NUEVO MODAL: BANDEJA DE ENTRADA IA -->
+        <div id="modal-ai-inbox" class="modal-sheet z-[90]" style="height: 90%;">
+            <div class="modal-handle-container"><div class="modal-handle"></div></div>
+            <div class="px-6 pb-10 flex flex-col h-full">
+                <div class="w-16 h-16 bg-blue-500/10 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-4 shrink-0">
+                    <i class="ph-fill ph-envelope-open text-3xl"></i>
+                </div>
+                <h3 class="text-2xl font-black tracking-tight mb-2 text-center">Nuevos Recibos</h3>
+                <p class="text-center text-xs font-medium opacity-60 mb-6 shrink-0">Tu IA detectó estos correos y esperan tu aprobación.</p>
+                
+                <div id="pending-list" class="flex-1 overflow-y-auto no-scrollbar space-y-4 pb-4">
+                    <!-- Cards de correos pendientes se inyectan acá -->
+                </div>
+                
+                <button onclick="closeModal('modal-ai-inbox')" class="w-full py-4 bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-gray-300 font-black rounded-2xl active:scale-95 transition-transform tracking-widest uppercase text-[10px] mt-2 shrink-0">Revisar más tarde</button>
+            </div>
+        </div>
+
         <!-- MODAL DETALLES -->
         <div id="modal-details" class="modal-sheet z-[55]">
             <div class="modal-handle-container"><div class="modal-handle"></div></div>
@@ -664,22 +679,6 @@
                         <i class="ph-bold ph-sign-out text-lg"></i>Cerrar Sesión Segura
                     </button>
                     
-                </div>
-            </div>
-        </div>
-
-        <!-- MODAL CONFIRMAR BORRAR TODO (REMOVIDO DEL UI PERO MANTENIDO EN CÓDIGO POR SI ACASO) -->
-        <div id="modal-clear-all" class="modal-sheet z-[80]" style="height: auto; min-height: 40%;">
-            <div class="modal-handle-container"><div class="modal-handle"></div></div>
-            <div class="px-6 flex flex-col pb-8 items-center text-center h-full">
-                <div class="w-16 h-16 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mb-4 mt-2">
-                    <i class="ph-fill ph-warning-octagon text-4xl"></i>
-                </div>
-                <h3 class="text-2xl font-black tracking-tight mb-2">¿Borrar Todo?</h3>
-                <p class="text-sm font-medium opacity-60 mb-8 px-2">Esta acción eliminará <b>todos tus registros</b> permanentemente. No se puede deshacer.</p>
-                <div class="flex gap-3 w-full mt-auto">
-                    <button onclick="closeModal('modal-clear-all')" class="flex-1 bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-gray-300 font-black py-4 rounded-2xl active:scale-95 transition-transform tracking-widest uppercase text-[10px]">Cancelar</button>
-                    <button onclick="executeClearAll()" class="flex-1 bg-red-500 text-white font-black py-4 rounded-2xl active:scale-95 transition-transform tracking-widest uppercase text-[10px] shadow-lg shadow-red-500/20">Sí, Borrar</button>
                 </div>
             </div>
         </div>
@@ -992,50 +991,120 @@
         const SUPABASE_URL = 'https://xnjtwhktrtaoogmgxsyr.supabase.co';
         
         // 🔥 BORRA EL TEXTO ENTRE LAS COMILLAS Y PEGA TU LLAVE sb_publishable AQUÍ 🔥
-        const SUPABASE_KEY = 'sb_publishable_KG6oi33X-1GCaMBBD78A5w_PTPyh2Nf';
+        const SUPABASE_KEY = 'PEGAR_AQUI_LA_LLAVE_PUBLICA';
         
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         // Variables Globales
         let currentUser = null;
+        let pendingRecordsCache = [];
 
         // ==========================================
-        // 2. LÓGICA DE INICIO DE SESIÓN
+        // 2. LÓGICA DE LA NUBE Y SESIÓN
         // ==========================================
+        async function loadUserData() {
+            if (!currentUser) return;
+            try {
+                // 1. Cargar Ajustes Personales
+                const { data: settingsData } = await supabaseClient.from('user_settings').select('*').eq('user_id', currentUser.id).single();
+                
+                if (settingsData) {
+                    appData.settings = { ...appData.settings, ...(settingsData.settings || {}) };
+                    if (settingsData.cats && Object.keys(settingsData.cats).length > 0) {
+                        appData.cats = settingsData.cats;
+                    }
+                } else {
+                    // Si es usuario nuevo, creamos su fila de ajustes por defecto
+                    await supabaseClient.from('user_settings').insert({
+                        user_id: currentUser.id,
+                        settings: appData.settings,
+                        cats: appData.cats
+                    });
+                }
+
+                // 2. Cargar Finanzas Personales
+                const { data: recordsData } = await supabaseClient.from('records').select('*').eq('user_id', currentUser.id).order('date', { ascending: false });
+                
+                if (recordsData && recordsData.length > 0) {
+                    appData.records = recordsData.map(r => ({
+                        id: parseInt(r.id),
+                        type: r.type,
+                        amount: parseFloat(r.amount),
+                        date: r.date,
+                        payDate: r.paydate,
+                        detail: r.detail,
+                        category: r.category,
+                        status: r.status,
+                        icon: r.icon,
+                        color: r.color,
+                        originalDate: r.originaldate,
+                        payMethod: r.paymethod,
+                        loanId: r.loanid ? parseInt(r.loanid) : null
+                    }));
+                } else {
+                    // MIGRACIÓN MÁGICA: Si no hay datos en la nube, pero sí en el localStorage, los subimos.
+                    const localData = JSON.parse(localStorage.getItem('finanzas_rioluquitas'));
+                    if (localData && localData.records && localData.records.length > 0) {
+                        showToast('🔄 MIGRANDO TUS DATOS A LA NUBE...');
+                        
+                        const dbRecords = localData.records.map(r => mapRecordToDB(r));
+                        await supabaseClient.from('records').insert(dbRecords);
+                        
+                        appData.records = localData.records;
+                        if (localData.settings) appData.settings = localData.settings;
+                        if (localData.cats) appData.cats = localData.cats;
+                        
+                        await syncSettingsToCloud();
+                        localStorage.removeItem('finanzas_rioluquitas'); // Limpiamos el rastro local
+                        setTimeout(() => showToast('☁️ TUS DATOS AHORA VIVEN EN LA NUBE'), 2000);
+                    }
+                }
+
+                // 3. Revisar Bandeja de Entrada IA
+                const { data: pendingData } = await supabaseClient.from('pending_records').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false });
+                
+                recalculateAbonos();
+                hideLoginScreen();
+                
+                if (pendingData && pendingData.length > 0) {
+                    pendingRecordsCache = pendingData;
+                    renderPendingRecords();
+                    setTimeout(() => {
+                        document.getElementById('modal-ai-inbox').classList.add('modal-active');
+                        document.getElementById('overlay').classList.remove('opacity-0', 'pointer-events-none');
+                    }, 800); // Pequeño retraso para que se vea más fluido al entrar
+                }
+
+            } catch (e) {
+                console.error("Error cargando datos:", e);
+                showToast("ERROR AL CONECTAR CON LA NUBE");
+            }
+        }
+
         async function checkSession() {
-            // Si la llave no se ha puesto, avisamos con un Toast en lugar de romper el texto visual
             if(SUPABASE_KEY === 'PEGAR_AQUI_LA_LLAVE_PUBLICA') {
                 setTimeout(() => showToast('⚠️ FALTA CONFIGURAR LLAVE EN CÓDIGO', 4000), 500);
                 return;
             }
-
             const { data: { session }, error } = await supabaseClient.auth.getSession();
-            
             if (session) {
                 currentUser = session.user;
-                hideLoginScreen();
+                await loadUserData();
             }
         }
 
         document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
+            if(SUPABASE_KEY === 'PEGAR_AQUI_LA_LLAVE_PUBLICA') return showToast('❌ DEBES PEGAR TU LLAVE EN EL CÓDIGO PRIMERO');
             
-            if(SUPABASE_KEY === 'PEGAR_AQUI_LA_LLAVE_PUBLICA') {
-                return showToast('❌ DEBES PEGAR TU LLAVE EN EL CÓDIGO PRIMERO');
-            }
-
-            const email = document.getElementById('login-email').value;
-            const password = document.getElementById('login-password').value;
             const btn = document.getElementById('login-btn');
-            
-            // Animación de carga
             const originalText = btn.innerHTML;
             btn.innerHTML = '<div class="w-5 h-5 border-[3px] border-white/30 border-t-white rounded-full animate-spin"></div>';
             btn.classList.add('pointer-events-none');
 
             const { data, error } = await supabaseClient.auth.signInWithPassword({
-                email: email,
-                password: password,
+                email: document.getElementById('login-email').value,
+                password: document.getElementById('login-password').value,
             });
 
             if (error) {
@@ -1045,14 +1114,12 @@
             } else {
                 currentUser = data.user;
                 showToast('✅ ACCESO AUTORIZADO');
-                hideLoginScreen();
+                await loadUserData();
             }
         });
 
         function hideLoginScreen() {
-            const loginScreen = document.getElementById('login-screen');
-            loginScreen.classList.add('opacity-0', 'pointer-events-none', 'scale-105');
-            // Cargar datos al entrar
+            document.getElementById('login-screen').classList.add('opacity-0', 'pointer-events-none', 'scale-105');
             applyTheme(); 
             applyAppName();
             navigate('dashboard'); 
@@ -1063,19 +1130,132 @@
             window.location.reload(); 
         }
 
-        // Animación decorativa del Login Premium
-        setInterval(() => {
-            const b1 = document.getElementById('login-blob-1');
-            const b2 = document.getElementById('login-blob-2');
-            if(b1 && b2) {
-                b1.style.transform = `translate(${Math.random()*40-20}px, ${Math.random()*40-20}px) scale(${0.9 + Math.random()*0.2})`;
-                b2.style.transform = `translate(${Math.random()*40-20}px, ${Math.random()*40-20}px) scale(${0.9 + Math.random()*0.2})`;
-            }
-        }, 3000);
+        // ==========================================
+        // 3. SINCRONIZACIÓN Y GUARDADO DE DATOS (NUEVO)
+        // ==========================================
+        
+        // Sincroniza configuraciones y temas
+        async function syncSettingsToCloud() {
+            if (!currentUser) return;
+            await supabaseClient.from('user_settings').upsert({
+                user_id: currentUser.id,
+                settings: appData.settings,
+                cats: appData.cats
+            });
+        }
+
+        // Transforma el formato de memoria al formato de la Base de Datos
+        function mapRecordToDB(r) {
+            return {
+                id: r.id,
+                user_id: currentUser.id,
+                type: r.type,
+                amount: r.amount,
+                date: r.date,
+                paydate: r.payDate || null,
+                detail: r.detail || null,
+                category: r.category,
+                status: r.status,
+                icon: r.icon,
+                color: r.color,
+                originaldate: r.originalDate || r.date,
+                paymethod: r.payMethod || 'debito',
+                loanid: r.loanId || null
+            };
+        }
 
 
         // ==========================================
-        // 3. RESTO DEL CÓDIGO 
+        // 4. LÓGICA DE BANDEJA DE ENTRADA IA
+        // ==========================================
+        function renderPendingRecords() {
+            const list = document.getElementById('pending-list');
+            if (pendingRecordsCache.length === 0) {
+                closeModal('modal-ai-inbox');
+                return;
+            }
+
+            list.innerHTML = pendingRecordsCache.map(p => {
+                const colorTexto = p.type === 'ingreso' ? 'text-themeGreen' : 'text-gray-900 dark:text-white';
+                return `
+                <div class="bg-iosCard-light dark:bg-iosCard-dark border border-black/5 dark:border-white/5 p-5 rounded-3xl shadow-sm">
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <p class="font-black text-[10px] text-themeGreen uppercase tracking-widest mb-1">NUEVO ${p.type}</p>
+                            <p class="font-black text-2xl ${colorTexto}">${fmt(p.amount)}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-bold text-xs truncate max-w-[120px]">${p.category}</p>
+                            <p class="text-[9px] opacity-40 uppercase font-black tracking-widest mt-1">${p.date}</p>
+                        </div>
+                    </div>
+                    ${p.detail ? `<p class="text-xs font-medium opacity-70 mb-4 bg-gray-100 dark:bg-white/5 p-3 rounded-xl italic break-words border border-black/5 dark:border-white/5">"${p.detail}"</p>` : '<div class="mb-4"></div>'}
+                    
+                    <div class="flex gap-2">
+                        <button onclick="approvePending(${p.id})" class="flex-1 bg-themeGreen text-white font-black py-3 rounded-xl active:scale-95 transition-transform text-[9px] uppercase tracking-widest flex items-center justify-center gap-1 shadow-md shadow-themeGreen/20"><i class="ph-bold ph-check text-base"></i> Aprobar</button>
+                        <button onclick="editPending(${p.id})" class="flex-[0.5] bg-blue-500/10 text-blue-500 font-black py-3 rounded-xl active:scale-95 transition-transform text-[9px] uppercase tracking-widest flex items-center justify-center"><i class="ph-bold ph-pencil-simple text-base"></i></button>
+                        <button onclick="deletePending(${p.id})" class="flex-[0.5] bg-red-500/10 text-red-500 font-black py-3 rounded-xl active:scale-95 transition-transform text-[9px] uppercase tracking-widest flex items-center justify-center"><i class="ph-bold ph-trash text-base"></i></button>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        async function approvePending(dbId) {
+            const p = pendingRecordsCache.find(x => x.id === dbId);
+            if(!p) return;
+
+            // Encontrar el icono y color que corresponde a la categoría
+            let icon = 'ph-fill ph-circle';
+            let color = 'text-gray-400';
+            const allCats = [...(appData.cats[p.type] || [])];
+            const catObj = allCats.find(c => c.n.toLowerCase() === p.category.toLowerCase());
+            if(catObj) { icon = catObj.i; color = catObj.c; }
+
+            const newRec = {
+                id: Date.now(), type: p.type, amount: p.amount, date: p.date, payDate: null, 
+                detail: p.detail, category: catObj ? catObj.n : p.category, status: p.type === 'prestamo' ? 'pending' : 'done',
+                icon: icon, color: color, originalDate: p.date, payMethod: 'debito', loanId: null
+            };
+
+            // Animación optimista
+            pendingRecordsCache = pendingRecordsCache.filter(x => x.id !== dbId);
+            renderPendingRecords();
+            appData.records.push(newRec);
+            recalculateAbonos();
+            navigate('dashboard');
+            showToast('✅ APROBADO Y GUARDADO');
+
+            // Enviar a la nube en segundo plano
+            await supabaseClient.from('pending_records').delete().eq('id', dbId);
+            await supabaseClient.from('records').insert([mapRecordToDB(newRec)]);
+        }
+
+        async function deletePending(dbId) {
+            pendingRecordsCache = pendingRecordsCache.filter(x => x.id !== dbId);
+            renderPendingRecords();
+            showToast('🗑️ CORREO DESCARTADO');
+            await supabaseClient.from('pending_records').delete().eq('id', dbId);
+        }
+
+        function editPending(dbId) {
+            const p = pendingRecordsCache.find(x => x.id === dbId);
+            if(!p) return;
+            
+            // Usamos el sistema de IA temporal para inyectar en el formulario
+            tempAiResult = {
+                tipo: p.type, monto: p.amount, detalle: p.detail, categoria: p.category
+            };
+            
+            // Eliminamos de pendientes de forma optimista (si cancela la edición se pierde, pero evita duplicados)
+            deletePending(dbId);
+            
+            closeModal('modal-ai-inbox');
+            applyAiResult();
+        }
+
+        // ==========================================
+        // 5. VARIABLES DE ESTADO Y AJUSTES
         // ==========================================
 
         const PRESET_THEMES = {
@@ -1207,7 +1387,7 @@
             appData.settings.font = f;
             applyTheme();
             highlightFontBtn(f);
-            save();
+            syncSettingsToCloud();
         }
 
         function setPresetTheme(name) {
@@ -1236,7 +1416,7 @@
 
         function saveTheme() {
             appData.settings.customColors = tempColors;
-            save();
+            syncSettingsToCloud();
             closeModal('modal-theme');
             showToast('TEMA GUARDADO');
         }
@@ -1261,24 +1441,12 @@
             ]
         };
 
-        let appData = JSON.parse(localStorage.getItem('finanzas_rioluquitas'));
-        
-        if (!appData) {
-            appData = { records: [], settings: { dark: false, apiKey: '', aiVoice: true, aiCamera: true, colorTheme: 'classic', appName: 'Rioluquitas', font: 'sans', privacyMode: false }, cats: JSON.parse(JSON.stringify(defaultCats)) };
-        } else {
-            if (!appData.settings) appData.settings = { dark: false, apiKey: '', aiVoice: true, aiCamera: true, colorTheme: 'classic', appName: 'Rioluquitas', font: 'sans', privacyMode: false };
-            if (appData.settings.aiVoice === undefined) appData.settings.aiVoice = true;
-            if (appData.settings.aiCamera === undefined) appData.settings.aiCamera = true;
-            if (appData.settings.privacyMode === undefined) appData.settings.privacyMode = false;
-            if (!appData.settings.appName) appData.settings.appName = 'Rioluquitas'; 
-            if (!appData.settings.font) appData.settings.font = 'sans';
-            if (!appData.cats) {
-                appData.cats = {
-                    gasto: [...defaultCats.gasto, ...(appData.customCats?.gasto || [])],
-                    ingreso: [...defaultCats.ingreso, ...(appData.customCats?.ingreso || [])]
-                };
-            }
-        }
+        // El estado de la app en memoria.
+        let appData = { 
+            records: [], 
+            settings: { dark: false, apiKey: '', aiVoice: true, aiCamera: true, colorTheme: 'classic', appName: 'Rioluquitas', font: 'sans', privacyMode: false }, 
+            cats: JSON.parse(JSON.stringify(defaultCats)) 
+        };
 
         let tempAiResult = null; 
         let loadedPastMonths = 0;
@@ -1294,7 +1462,7 @@
             let name = document.getElementById('app-name-input').value.trim();
             if(!name) name = 'Rioluquitas';
             appData.settings.appName = name.substring(0, 18);
-            save();
+            syncSettingsToCloud();
             applyAppName();
             closeModal('modal-edit-name');
             showToast('NOMBRE ACTUALIZADO');
@@ -1302,7 +1470,7 @@
 
         function togglePrivacyMode() {
             appData.settings.privacyMode = !appData.settings.privacyMode;
-            save();
+            syncSettingsToCloud();
             navigate(curTab); 
             showToast(appData.settings.privacyMode ? 'MODO OCULTO ACTIVADO' : 'MODO OCULTO DESACTIVADO');
             setTimeout(() => { blockCardClick = false; }, 300);
@@ -1317,7 +1485,7 @@
 
         function toggleAiSetting(type) {
             appData.settings['ai' + type] = !appData.settings['ai' + type];
-            save();
+            syncSettingsToCloud();
             updateAiTogglesUI();
         }
 
@@ -1346,7 +1514,7 @@
         function saveApiKey() {
             if(document.activeElement) document.activeElement.blur();
             appData.settings.apiKey = document.getElementById('api-key-input').value.trim();
-            save();
+            syncSettingsToCloud();
             closeModal('modal-api-key');
             showToast('LLAVE GUARDADA');
         }
@@ -1561,7 +1729,7 @@
             }
         }
 
-        function saveAiResultDirectly() {
+        async function saveAiResultDirectly() {
             if(!tempAiResult) return;
 
             const tipoT = tempAiResult.tipo; 
@@ -1586,7 +1754,7 @@
                 }
             }
 
-            appData.records.push({
+            const newRec = {
                 id: Date.now(),
                 type: tipoT,
                 amount: amount,
@@ -1599,13 +1767,17 @@
                 color: color,
                 originalDate: date,
                 payMethod: 'debito'
-            });
+            };
 
-            save();
+            appData.records.push(newRec);
+            recalculateAbonos();
             closeAllModals();
             navigate(tipoT + 's'); 
             showToast('GUARDADO CON ÉXITO');
             tempAiResult = null;
+
+            // Enviar a la nube en segundo plano
+            await supabaseClient.from('records').insert([mapRecordToDB(newRec)]);
         }
 
         function applyAiResult() {
@@ -1673,11 +1845,6 @@
                 }
             });
         }
-
-        const save = () => {
-            recalculateAbonos();
-            localStorage.setItem('finanzas_rioluquitas', JSON.stringify(appData));
-        };
         
         let curDate = new Date();
         let curTab = 'dashboard';
@@ -1943,7 +2110,7 @@
                 showToast('CATEGORÍA CREADA');
             }
             
-            save();
+            syncSettingsToCloud();
             cancelEditCustomCat();
             renderCustomCatList();
         }
@@ -1953,7 +2120,7 @@
                 return showToast('DEBES TENER AL MENOS UNA');
             }
             appData.cats[ccCurrentTab].splice(idx, 1);
-            save();
+            syncSettingsToCloud();
             renderCustomCatList();
         }
 
@@ -2304,7 +2471,7 @@
             let overdue = [];
             let movedCount = 0;
 
-            appData.records.forEach(r => {
+            appData.records.forEach(async r => {
                 if (r.type === 'prestamo' && r.status === 'pending') {
                     if (r.payDate && r.payDate < today) overdue.push(r);
                     const rDate = new Date(r.date + 'T00:00:00');
@@ -2312,10 +2479,12 @@
                         r.originalDate = r.originalDate || r.date; 
                         r.date = today;
                         movedCount++;
+                        // Sincronizar actualización de fecha a la nube
+                        await supabaseClient.from('records').update({ date: r.date, originaldate: r.originalDate }).eq('id', r.id);
                     }
                 }
             });
-            if (movedCount > 0) save();
+            if (movedCount > 0) recalculateAbonos();
             if (overdue.length > 0) {
                 const listEl = document.getElementById('alert-list');
                 listEl.innerHTML = overdue.map(r => `
@@ -2826,7 +2995,7 @@
             document.getElementById('overlay').classList.remove('opacity-0', 'pointer-events-none');
         }
 
-        function processAbono() {
+        async function processAbono() {
             if(document.activeElement) document.activeElement.blur();
             const r = appData.records.find(x => x.id === currentAbonoLoanId);
             const abonoRaw = parseInt(document.getElementById('abono-amount-raw').value, 10);
@@ -2835,7 +3004,7 @@
             const remaining = r.amount - (r.paidAmount || 0);
             const actualAbono = Math.min(abonoRaw, remaining);
 
-            appData.records.push({
+            const newRec = {
                 id: Date.now(),
                 loanId: r.id, 
                 type: 'ingreso',
@@ -2848,7 +3017,9 @@
                 color: 'text-themeGreen',
                 originalDate: new Date().toISOString().split('T')[0],
                 payMethod: 'debito'
-            });
+            };
+
+            appData.records.push(newRec);
 
             const btn = document.getElementById('btn-submit-abono');
             btn.innerHTML = `<i class="ph-bold ph-check text-2xl"></i>`;
@@ -2856,23 +3027,25 @@
             
             setTimeout(() => {
                 btn.classList.remove('bounce-check');
-                save(); 
+                recalculateAbonos(); 
                 closeModal('modal-abono');
                 navigate('prestamos');
                 showToast(actualAbono === remaining ? 'PRÉSTAMO PAGADO' : 'ABONO GUARDADO');
             }, 500);
+
+            await supabaseClient.from('records').insert([mapRecordToDB(newRec)]);
         }
 
-        function cobrarTodo(id) {
+        async function cobrarTodo(id) {
             const btn = document.getElementById(`btn-cobrar-todo-${id}`);
             btn.innerHTML = `<i class="ph-bold ph-check text-xl"></i>`;
             btn.classList.add('bounce-check');
             
-            setTimeout(() => {
+            setTimeout(async () => {
                 const r = appData.records.find(x => x.id === id);
                 const remaining = r.amount - (r.paidAmount || 0);
                 
-                appData.records.push({
+                const newRec = {
                     id: Date.now(),
                     loanId: r.id,
                     type: 'ingreso',
@@ -2885,11 +3058,14 @@
                     color: 'text-themeGreen',
                     originalDate: new Date().toISOString().split('T')[0],
                     payMethod: 'debito'
-                });
+                };
                 
-                save();
+                appData.records.push(newRec);
+                recalculateAbonos();
                 navigate('prestamos');
                 showToast('COBRADO');
+
+                await supabaseClient.from('records').insert([mapRecordToDB(newRec)]);
             }, 500);
         }
 
@@ -3098,10 +3274,14 @@
             setTimeout(() => { document.getElementById('modal-add').classList.add('modal-active'); }, 50);
         }
 
-        function deleteRecord(id) {
-            appData.records = appData.records.filter(r => r.id !== id);
-            appData.records = appData.records.filter(r => r.loanId !== id);
-            save(); closeAllModals(); showToast('ELIMINADO'); navigate(curTab);
+        async function deleteRecord(id) {
+            appData.records = appData.records.filter(r => r.id !== id && r.loanId !== id);
+            
+            closeAllModals(); showToast('ELIMINADO'); navigate(curTab);
+            
+            // Nube
+            await supabaseClient.from('records').delete().eq('id', id);
+            await supabaseClient.from('records').delete().eq('loanid', id);
         }
 
         function openGlobalMonthSelector() {
@@ -3182,7 +3362,7 @@
         function setTodayDP() { const now = new Date(); curDate = new Date(now.getFullYear(), now.getMonth(), 1); setDP(now.getDate()); }
         function moveCalMonth(d) { curDate.setMonth(curDate.getMonth() + d); renderDP(); }
 
-        document.getElementById('add-form').onsubmit = (e) => {
+        document.getElementById('add-form').onsubmit = async (e) => {
             e.preventDefault();
             if(document.activeElement) document.activeElement.blur(); 
 
@@ -3202,16 +3382,21 @@
 
             if (editingId) {
                 const idx = appData.records.findIndex(r => r.id === editingId);
-                if(idx !== -1) appData.records[idx] = { ...appData.records[idx], type: curFormMode, amount, date, payDate, detail, category, icon, color, originalDate: date, payMethod };
+                if(idx !== -1) {
+                    appData.records[idx] = { ...appData.records[idx], type: curFormMode, amount, date, payDate, detail, category, icon, color, originalDate: date, payMethod };
+                    await supabaseClient.from('records').update(mapRecordToDB(appData.records[idx])).eq('id', editingId);
+                }
                 showToast('ACTUALIZADO');
             } else {
-                appData.records.push({ id: Date.now(), type: curFormMode, amount, date, payDate, detail, category, status: curFormMode === 'prestamo' ? 'pending' : 'done', icon, color, originalDate: date, payMethod });
+                const newRec = { id: Date.now(), type: curFormMode, amount, date, payDate, detail, category, status: curFormMode === 'prestamo' ? 'pending' : 'done', icon, color, originalDate: date, payMethod };
+                appData.records.push(newRec);
+                await supabaseClient.from('records').insert([mapRecordToDB(newRec)]);
                 showToast('GUARDADO');
             }
-            save(); closeAllModals(); navigate(curFormMode + 's');
+            recalculateAbonos(); closeAllModals(); navigate(curFormMode + 's');
         };
 
-        function toggleDarkMode() { appData.settings.dark = !appData.settings.dark; applyTheme(); save(); }
+        function toggleDarkMode() { appData.settings.dark = !appData.settings.dark; applyTheme(); syncSettingsToCloud(); }
         function applyTheme() { 
             if(appData.settings.dark) document.documentElement.classList.add('dark'); 
             else document.documentElement.classList.remove('dark'); 
@@ -3241,13 +3426,14 @@
             document.getElementById('overlay').classList.remove('opacity-0', 'pointer-events-none');
         }
 
-        function executeClearAll() {
+        async function executeClearAll() {
             appData.records = [];
             loadedPastMonths = 0;
-            save();
+            recalculateAbonos();
             closeAllModals();
             navigate('dashboard');
-            showToast('DATOS BORRADOS');
+            showToast('DATOS BORRADOS EN LA NUBE');
+            await supabaseClient.from('records').delete().eq('user_id', currentUser.id);
         }
 
         document.getElementById('in-amount-formatted').addEventListener('input', (e) => {
