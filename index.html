@@ -488,16 +488,16 @@
         </div>
 
         <!-- NUEVO MODAL: BANDEJA DE ENTRADA IA -->
-        <div id="modal-ai-inbox" class="modal-sheet z-[90]" style="height: 90%;">
+        <div id="modal-ai-inbox" class="modal-sheet z-[90]" style="height: 92%;">
             <div class="modal-handle-container"><div class="modal-handle"></div></div>
-            <div class="px-6 pb-10 flex flex-col h-full">
+            <div class="px-6 pb-10 flex flex-col h-full overflow-hidden">
                 <div class="w-16 h-16 bg-blue-500/10 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-4 shrink-0">
                     <i class="ph-fill ph-envelope-open text-3xl"></i>
                 </div>
-                <h3 class="text-2xl font-black tracking-tight mb-2 text-center">Nuevos Recibos</h3>
+                <h3 class="text-2xl font-black tracking-tight mb-2 text-center shrink-0">Nuevos Recibos</h3>
                 <p class="text-center text-xs font-medium opacity-60 mb-6 shrink-0">Tu IA detectó estos correos y esperan tu aprobación.</p>
                 
-                <div id="pending-list" class="flex-1 overflow-y-auto no-scrollbar space-y-4 pb-4">
+                <div id="pending-list" class="flex-1 overflow-y-auto no-scrollbar space-y-4 pb-4 min-h-0" style="touch-action: pan-y;">
                     <!-- Cards de correos pendientes se inyectan acá -->
                 </div>
                 
@@ -998,6 +998,7 @@
         // Variables Globales
         let currentUser = null;
         let pendingRecordsCache = [];
+        window.returnToInbox = false; // FLAG PARA LA BANDEJA INTELIGENTE
 
         // ==========================================
         // 2. LÓGICA DE LA NUBE Y SESIÓN
@@ -1005,7 +1006,6 @@
         async function loadUserData() {
             if (!currentUser) return;
             try {
-                // 1. Cargar Ajustes Personales
                 const { data: settingsData } = await supabaseClient.from('user_settings').select('*').eq('user_id', currentUser.id).single();
                 
                 if (settingsData) {
@@ -1014,53 +1014,32 @@
                         appData.cats = settingsData.cats;
                     }
                 } else {
-                    // Si es usuario nuevo, creamos su fila de ajustes por defecto
-                    await supabaseClient.from('user_settings').insert({
-                        user_id: currentUser.id,
-                        settings: appData.settings,
-                        cats: appData.cats
-                    });
+                    await supabaseClient.from('user_settings').insert({ user_id: currentUser.id, settings: appData.settings, cats: appData.cats });
                 }
 
-                // 2. Cargar Finanzas Personales
                 const { data: recordsData } = await supabaseClient.from('records').select('*').eq('user_id', currentUser.id).order('date', { ascending: false });
                 
                 if (recordsData && recordsData.length > 0) {
                     appData.records = recordsData.map(r => ({
-                        id: parseInt(r.id),
-                        type: r.type,
-                        amount: parseFloat(r.amount),
-                        date: r.date,
-                        payDate: r.paydate,
-                        detail: r.detail,
-                        category: r.category,
-                        status: r.status,
-                        icon: r.icon,
-                        color: r.color,
-                        originalDate: r.originaldate,
-                        payMethod: r.paymethod,
-                        loanId: r.loanid ? parseInt(r.loanid) : null
+                        id: parseInt(r.id), type: r.type, amount: parseFloat(r.amount), date: r.date, payDate: r.paydate, detail: r.detail,
+                        category: r.category, status: r.status, icon: r.icon, color: r.color, originalDate: r.originaldate,
+                        payMethod: r.paymethod, loanId: r.loanid ? parseInt(r.loanid) : null
                     }));
                 } else {
-                    // MIGRACIÓN MÁGICA: Si no hay datos en la nube, pero sí en el localStorage, los subimos.
                     const localData = JSON.parse(localStorage.getItem('finanzas_rioluquitas'));
                     if (localData && localData.records && localData.records.length > 0) {
                         showToast('🔄 MIGRANDO TUS DATOS A LA NUBE...');
-                        
                         const dbRecords = localData.records.map(r => mapRecordToDB(r));
                         await supabaseClient.from('records').insert(dbRecords);
-                        
                         appData.records = localData.records;
                         if (localData.settings) appData.settings = localData.settings;
                         if (localData.cats) appData.cats = localData.cats;
-                        
                         await syncSettingsToCloud();
-                        localStorage.removeItem('finanzas_rioluquitas'); // Limpiamos el rastro local
+                        localStorage.removeItem('finanzas_rioluquitas'); 
                         setTimeout(() => showToast('☁️ TUS DATOS AHORA VIVEN EN LA NUBE'), 2000);
                     }
                 }
 
-                // 3. Revisar Bandeja de Entrada IA
                 const { data: pendingData } = await supabaseClient.from('pending_records').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false });
                 
                 recalculateAbonos();
@@ -1072,7 +1051,7 @@
                     setTimeout(() => {
                         document.getElementById('modal-ai-inbox').classList.add('modal-active');
                         document.getElementById('overlay').classList.remove('opacity-0', 'pointer-events-none');
-                    }, 800); // Pequeño retraso para que se vea más fluido al entrar
+                    }, 800); 
                 }
 
             } catch (e) {
@@ -1086,7 +1065,7 @@
                 setTimeout(() => showToast('⚠️ FALTA CONFIGURAR LLAVE EN CÓDIGO', 4000), 500);
                 return;
             }
-            const { data: { session }, error } = await supabaseClient.auth.getSession();
+            const { data: { session } } = await supabaseClient.auth.getSession();
             if (session) {
                 currentUser = session.user;
                 await loadUserData();
@@ -1130,43 +1109,21 @@
             window.location.reload(); 
         }
 
-        // ==========================================
-        // 3. SINCRONIZACIÓN Y GUARDADO DE DATOS (NUEVO)
-        // ==========================================
-        
-        // Sincroniza configuraciones y temas
         async function syncSettingsToCloud() {
             if (!currentUser) return;
-            await supabaseClient.from('user_settings').upsert({
-                user_id: currentUser.id,
-                settings: appData.settings,
-                cats: appData.cats
-            });
+            await supabaseClient.from('user_settings').upsert({ user_id: currentUser.id, settings: appData.settings, cats: appData.cats });
         }
 
-        // Transforma el formato de memoria al formato de la Base de Datos
         function mapRecordToDB(r) {
             return {
-                id: r.id,
-                user_id: currentUser.id,
-                type: r.type,
-                amount: r.amount,
-                date: r.date,
-                paydate: r.payDate || null,
-                detail: r.detail || null,
-                category: r.category,
-                status: r.status,
-                icon: r.icon,
-                color: r.color,
-                originaldate: r.originalDate || r.date,
-                paymethod: r.payMethod || 'debito',
-                loanid: r.loanId || null
+                id: r.id, user_id: currentUser.id, type: r.type, amount: r.amount, date: r.date, paydate: r.payDate || null,
+                detail: r.detail || null, category: r.category, status: r.status, icon: r.icon, color: r.color,
+                originaldate: r.originalDate || r.date, paymethod: r.payMethod || 'debito', loanid: r.loanId || null
             };
         }
 
-
         // ==========================================
-        // 4. LÓGICA DE BANDEJA DE ENTRADA IA
+        // 4. LÓGICA DE BANDEJA DE ENTRADA IA MEJORADA
         // ==========================================
         function renderPendingRecords() {
             const list = document.getElementById('pending-list');
@@ -1205,7 +1162,6 @@
             const p = pendingRecordsCache.find(x => x.id === dbId);
             if(!p) return;
 
-            // Encontrar el icono y color que corresponde a la categoría
             let icon = 'ph-fill ph-circle';
             let color = 'text-gray-400';
             const allCats = [...(appData.cats[p.type] || [])];
@@ -1218,7 +1174,6 @@
                 icon: icon, color: color, originalDate: p.date, payMethod: 'debito', loanId: null
             };
 
-            // Animación optimista
             pendingRecordsCache = pendingRecordsCache.filter(x => x.id !== dbId);
             renderPendingRecords();
             appData.records.push(newRec);
@@ -1226,7 +1181,6 @@
             navigate('dashboard');
             showToast('✅ APROBADO Y GUARDADO');
 
-            // Enviar a la nube en segundo plano
             await supabaseClient.from('pending_records').delete().eq('id', dbId);
             await supabaseClient.from('records').insert([mapRecordToDB(newRec)]);
         }
@@ -1242,20 +1196,33 @@
             const p = pendingRecordsCache.find(x => x.id === dbId);
             if(!p) return;
             
-            // Usamos el sistema de IA temporal para inyectar en el formulario
-            tempAiResult = {
-                tipo: p.type, monto: p.amount, detalle: p.detail, categoria: p.category
-            };
-            
-            // Eliminamos de pendientes de forma optimista (si cancela la edición se pierde, pero evita duplicados)
-            deletePending(dbId);
-            
             closeModal('modal-ai-inbox');
-            applyAiResult();
+
+            editingId = null; // No estamos editando un record existente, estamos editando un pendiente para CREARLO.
+            setFormMode(p.type, p.category);
+            document.getElementById('in-amount-raw').value = p.amount;
+            document.getElementById('in-amount-formatted').value = '$ ' + new Intl.NumberFormat('es-CL').format(p.amount);
+            document.getElementById('in-detail').value = p.detail || '';
+            
+            const dateToUse = p.date || new Date().toISOString().split('T')[0];
+            document.getElementById('in-date').value = dateToUse;
+            const [y, m, d] = dateToUse.split('-'); 
+            document.getElementById('display-date').textContent = `${parseInt(d)} ${mNames[parseInt(m)-1].substring(0,3)}`;
+
+            // Borramos de pendientes optimísticamente para que no se duplique al guardar
+            deletePending(dbId);
+
+            window.returnToInbox = true; // El truco para que la app sepa que debe volver atrás
+            document.getElementById('btn-submit-form').textContent = 'Guardar Corregido';
+            
+            setTimeout(() => {
+                document.getElementById('modal-add').classList.add('modal-active');
+                document.getElementById('overlay').classList.remove('opacity-0', 'pointer-events-none');
+            }, 300);
         }
 
         // ==========================================
-        // 5. VARIABLES DE ESTADO Y AJUSTES
+        // 5. VARIABLES Y RESTO DEL CÓDIGO
         // ==========================================
 
         const PRESET_THEMES = {
@@ -1441,7 +1408,6 @@
             ]
         };
 
-        // El estado de la app en memoria.
         let appData = { 
             records: [], 
             settings: { dark: false, apiKey: '', aiVoice: true, aiCamera: true, colorTheme: 'classic', appName: 'Rioluquitas', font: 'sans', privacyMode: false }, 
@@ -1755,18 +1721,9 @@
             }
 
             const newRec = {
-                id: Date.now(),
-                type: tipoT,
-                amount: amount,
-                date: date,
-                payDate: '', 
-                detail: detail,
-                category: finalCategoryName,
-                status: tipoT === 'prestamo' ? 'pending' : 'done',
-                icon: icon,
-                color: color,
-                originalDate: date,
-                payMethod: 'debito'
+                id: Date.now(), type: tipoT, amount: amount, date: date, payDate: '', 
+                detail: detail, category: finalCategoryName, status: tipoT === 'prestamo' ? 'pending' : 'done',
+                icon: icon, color: color, originalDate: date, payMethod: 'debito'
             };
 
             appData.records.push(newRec);
@@ -1776,7 +1733,6 @@
             showToast('GUARDADO CON ÉXITO');
             tempAiResult = null;
 
-            // Enviar a la nube en segundo plano
             await supabaseClient.from('records').insert([mapRecordToDB(newRec)]);
         }
 
@@ -2479,7 +2435,6 @@
                         r.originalDate = r.originalDate || r.date; 
                         r.date = today;
                         movedCount++;
-                        // Sincronizar actualización de fecha a la nube
                         await supabaseClient.from('records').update({ date: r.date, originaldate: r.originalDate }).eq('id', r.id);
                     }
                 }
@@ -3094,6 +3049,7 @@
 
         function openAddModal() {
             editingId = null;
+            window.returnToInbox = false; // Reset de seguridad
             document.getElementById('btn-submit-form').textContent = 'Guardar Registro';
             setFormMode(curTab === 'ingresos' ? 'ingreso' : (curTab === 'prestamos' ? 'prestamo' : 'gasto'));
             setPayMethod('debito');
@@ -3362,6 +3318,7 @@
         function setTodayDP() { const now = new Date(); curDate = new Date(now.getFullYear(), now.getMonth(), 1); setDP(now.getDate()); }
         function moveCalMonth(d) { curDate.setMonth(curDate.getMonth() + d); renderDP(); }
 
+        // MÓDULO ACTUALIZADO: AL GUARDAR EL FORMULARIO
         document.getElementById('add-form').onsubmit = async (e) => {
             e.preventDefault();
             if(document.activeElement) document.activeElement.blur(); 
@@ -3393,7 +3350,22 @@
                 await supabaseClient.from('records').insert([mapRecordToDB(newRec)]);
                 showToast('GUARDADO');
             }
-            recalculateAbonos(); closeAllModals(); navigate(curFormMode + 's');
+            
+            recalculateAbonos(); 
+            closeAllModals(window.returnToInbox); // Si volvemos, mantenemos el fondo oscuro
+            
+            // LA MAGIA: ¿Volvemos a la bandeja o nos vamos al inicio?
+            if (window.returnToInbox && pendingRecordsCache.length > 0) {
+                setTimeout(() => {
+                    renderPendingRecords(); // Re-dibuja para mostrar los que quedan
+                    document.getElementById('modal-ai-inbox').classList.add('modal-active');
+                }, 400);
+            } else {
+                if(window.returnToInbox) { showToast('BANDEJA LIMPIA 🎉'); document.getElementById('overlay').classList.add('opacity-0', 'pointer-events-none'); }
+                navigate(curFormMode + 's');
+            }
+            
+            window.returnToInbox = false; // Apagamos el truco
         };
 
         function toggleDarkMode() { appData.settings.dark = !appData.settings.dark; applyTheme(); syncSettingsToCloud(); }
@@ -3451,7 +3423,6 @@
         });
 
         window.onload = () => { 
-            // Inicia la verificación del Login antes de mostrar nada
             checkSession();
             
             initSwipeEvents(); 
