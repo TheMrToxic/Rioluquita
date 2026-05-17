@@ -466,7 +466,7 @@
                     <i class="ph-fill ph-sparkle text-3xl"></i>
                 </div>
                 <h3 class="text-2xl font-black tracking-tight mb-2 text-center">Registro Inteligente</h3>
-                <p class="text-center text-xs font-medium opacity-60 mb-6">¿Cómo quieres ingresar tus gastos?</p>
+                <p class="text-center text-xs font-medium opacity-60 mb-6 text-center">¿Cómo quieres ingresar tus gastos?</p>
                 
                 <div class="flex gap-4 mb-4">
                     <button type="button" onclick="closeModal('modal-ai-choice'); setTimeout(triggerCamera, 300)" class="flex-1 bg-gray-100 dark:bg-white/5 p-6 rounded-3xl flex flex-col items-center gap-3 active:scale-95 transition-all border border-black/5 dark:border-white/5">
@@ -578,7 +578,7 @@
             </div>
         </div>
 
-        <!-- MODAL SELECCIÓN MES GLOBAL -->
+        <!-- MODAL ELECCIÓN MES GLOBAL -->
         <div id="modal-month-selector" class="modal-sheet">
             <div class="modal-handle-container"><div class="modal-handle"></div></div>
             <div class="px-6 pb-10 flex flex-col">
@@ -991,7 +991,7 @@
         const SUPABASE_URL = 'https://xnjtwhktrtaoogmgxsyr.supabase.co';
         
         // 🔥 BORRA EL TEXTO ENTRE LAS COMILLAS Y PEGA TU LLAVE sb_publishable AQUÍ 🔥
-        const SUPABASE_KEY = 'sb_publishable_KG6oi33X-1GCaMBBD78A5w_PTPyh2Nf';
+        const SUPABASE_KEY = 'PEGAR_AQUI_LA_LLAVE_PUBLICA';
         
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -1046,12 +1046,26 @@
                 hideLoginScreen();
                 
                 if (pendingData && pendingData.length > 0) {
-                    pendingRecordsCache = pendingData;
+                    // 🛡️ ESCUDO PROTECTOR AUTOMÁTICO (Client-Side Failsafe)
+                    // Si por algún error de Make.com se coló un registro con categoría "Ignorar",
+                    // lo detectamos, lo borramos de Supabase en silencio y no lo mostramos en pantalla.
+                    const ignorarRecords = pendingData.filter(p => p.category && p.category.toLowerCase().trim() === 'ignorar');
+                    if (ignorarRecords.length > 0) {
+                        const ignorarIds = ignorarRecords.map(p => p.id);
+                        await supabaseClient.from('pending_records').delete().in('id', ignorarIds);
+                        console.log("🛡️ Rioluquitas Shield: Se auto-eliminaron duplicados ignorados de Supabase:", ignorarIds);
+                    }
+
+                    // Guardamos solo los válidos en la caché
+                    pendingRecordsCache = pendingData.filter(p => !p.category || p.category.toLowerCase().trim() !== 'ignorar');
                     renderPendingRecords();
-                    setTimeout(() => {
-                        document.getElementById('modal-ai-inbox').classList.add('modal-active');
-                        document.getElementById('overlay').classList.remove('opacity-0', 'pointer-events-none');
-                    }, 800); 
+                    
+                    if (pendingRecordsCache.length > 0) {
+                        setTimeout(() => {
+                            document.getElementById('modal-ai-inbox').classList.add('modal-active');
+                            document.getElementById('overlay').classList.remove('opacity-0', 'pointer-events-none');
+                        }, 800); 
+                    }
                 }
 
             } catch (e) {
@@ -2866,7 +2880,7 @@
                             </div>
                             ${r.status === 'pending' ? `
                             <div class="flex gap-2">
-                                <button onclick="cobrarTodo(${r.id})" id="btn-cobrar-todo-${r.id}" class="ignore-press flex-1 py-3.5 bg-themeGreen text-white rounded-xl font-black text-[9px] uppercase tracking-widest shadow-sm transition-all flex items-center justify-center gap-2">COBRAR TODO</button>
+                                <button onclick="cobrarTodo(${r.id})" id="btn-cobrar-todo-${id}" class="ignore-press flex-1 py-3.5 bg-themeGreen text-white rounded-xl font-black text-[9px] uppercase tracking-widest shadow-sm transition-all flex items-center justify-center gap-2">COBRAR TODO</button>
                                 <button onclick="openAbonoModal(${r.id})" class="ignore-press flex-[0.7] py-3.5 bg-themeGreen/10 text-themeGreen dark:bg-themeGreen/20 dark:text-themeGreen-light rounded-xl font-black text-[9px] uppercase tracking-widest shadow-sm transition-all">ABONAR</button>
                             </div>` : ''}
                         </div>`}).join('') || `
