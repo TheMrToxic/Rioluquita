@@ -3002,12 +3002,18 @@
         }
 
         function renderLoans(el, listMonth) {
-            const list = appData.records.filter(r => r.type === 'prestamo');
+            let list = appData.records.filter(r => r.type === 'prestamo');
+            
+            // ORDEN ESTRICTO: Primero por fecha, luego por hora/ID de creación
+            list = list.sort((a, b) => {
+                if (a.date !== b.date) return new Date(b.date) - new Date(a.date);
+                return b.id - a.id;
+            });
             
             const today = new Date().toISOString().split('T')[0];
             el.innerHTML = `<h2 class="text-2xl font-black mb-6 tracking-tight px-1">Préstamos</h2>
                 <div class="space-y-3 pb-20">
-                    ${list.slice().reverse().map(r => {
+                    ${list.map(r => {
                         const isVencido = r.status === 'pending' && r.payDate && r.payDate < today;
                         const isArrastrado = r.originalDate && r.originalDate !== r.date;
                         const dateText = isArrastrado ? 'Desde: ' + r.originalDate : r.date;
@@ -3061,7 +3067,13 @@
 
         function renderList(el, tab, data) {
             const isIngreso = tab === 'ingresos';
-            const filtered = data.filter(r => isIngreso ? (r.type === 'ingreso' || (r.type === 'prestamo' && r.status === 'paid' && !r.hasAbonos)) : (r.type === 'gasto' || r.type === 'prestamo'));
+            let filtered = data.filter(r => isIngreso ? (r.type === 'ingreso' || (r.type === 'prestamo' && r.status === 'paid' && !r.hasAbonos)) : (r.type === 'gasto' || r.type === 'prestamo'));
+            
+            // ORDEN ESTRICTO: Primero por fecha, luego por hora/ID de creación
+            filtered = filtered.sort((a, b) => {
+                if (a.date !== b.date) return new Date(b.date) - new Date(a.date);
+                return b.id - a.id;
+            });
             
             let extraHtml = '';
             if (isIngreso) {
@@ -3100,7 +3112,7 @@
                     ${extraHtml}
                 </div>
                 <div class="space-y-2 pb-10 w-full flex flex-col items-center">
-                    ${filtered.slice().reverse().map(r => renderRow(r, tab)).join('') || `
+                    ${filtered.map(r => renderRow(r, tab)).join('') || `
                     <div class="flex flex-col items-center justify-center py-12 w-full text-gray-400 dark:text-gray-500">
                         <div class="w-20 h-20 bg-gray-200/50 dark:bg-white/5 rounded-full flex items-center justify-center mb-4 shadow-inner">
                             <i class="ph-fill ${isIngreso ? 'ph-piggy-bank' : 'ph-receipt'} text-4xl opacity-50"></i>
