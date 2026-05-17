@@ -146,7 +146,7 @@
         .overflow-x-auto { touch-action: pan-x !important; -webkit-overflow-scrolling: touch; }
         .overflow-y-auto { touch-action: pan-y !important; -webkit-overflow-scrolling: touch; }
         
-        #modal-add, #modal-datepicker, #modal-abono, #modal-custom-cats, #modal-api-key, #modal-theme, #modal-analytics { height: 92%; }
+        #modal-add, #modal-datepicker, #modal-abono, #modal-custom-cats, #modal-api-key, #modal-theme, #modal-analytics, #modal-general-settings { height: 92%; }
         .modal-active { transform: translateY(0); box-shadow: 0 -10px 40px rgba(0,0,0,0.2); }
         .dark .modal-active { box-shadow: 0 -10px 40px rgba(0,0,0,0.5); }
         
@@ -443,9 +443,9 @@
                 </div>
 
                 <div id="person-field" class="hidden">
-                    <label class="text-[9px] font-black uppercase opacity-40 ml-1 tracking-widest">¿A quién?</label>
+                    <label class="text-[9px] font-black uppercase opacity-40 ml-1 tracking-widest">¿A quién le prestas?</label>
                     <div class="ios-input-full mt-1.5">
-                        <input type="text" id="in-person" class="ios-input !text-[16px]" placeholder="Nombre">
+                        <input type="text" id="in-person" class="ios-input !text-[16px]" placeholder="Nombre de persona">
                     </div>
                 </div>
 
@@ -592,6 +592,40 @@
             </div>
         </div>
 
+        <!-- MODAL AJUSTES GENERALES -->
+        <div id="modal-general-settings" class="modal-sheet z-[70]">
+            <div class="modal-handle-container"><div class="modal-handle"></div></div>
+            <div class="px-6 flex flex-col h-full pb-8">
+                <div class="w-16 h-16 bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-gray-300 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="ph-fill ph-sliders-horizontal text-3xl"></i>
+                </div>
+                <h3 class="text-2xl font-black tracking-tight mb-6 text-center">Ajustes Generales</h3>
+                
+                <div class="space-y-3 mb-6">
+                    <div class="bg-gray-100 dark:bg-white/5 p-4 rounded-2xl flex justify-between items-center">
+                        <div class="flex flex-col">
+                            <span class="font-bold text-sm tracking-tight">Ocultar 'Total + Préstamos'</span>
+                            <span class="text-[9px] opacity-40 font-bold uppercase">En el Balance Principal</span>
+                        </div>
+                        <button type="button" onclick="toggleGeneralSetting('hideTotalLoans')" id="set-hide-loans-btn" class="w-12 h-6 bg-themeGreen rounded-full relative transition-all">
+                            <div class="absolute top-1 left-7 w-4 h-4 bg-white rounded-full transition-all shadow set-hide-loans-knob"></div>
+                        </button>
+                    </div>
+                    <div class="bg-gray-100 dark:bg-white/5 p-4 rounded-2xl flex justify-between items-center">
+                        <div class="flex flex-col">
+                            <span class="font-bold text-sm tracking-tight">Ocultar Tarjetas Débito/Efectivo</span>
+                            <span class="text-[9px] opacity-40 font-bold uppercase">En la pantalla de Inicio</span>
+                        </div>
+                        <button type="button" onclick="toggleGeneralSetting('hideDebitCredit')" id="set-hide-cards-btn" class="w-12 h-6 bg-themeGreen rounded-full relative transition-all">
+                            <div class="absolute top-1 left-7 w-4 h-4 bg-white rounded-full transition-all shadow set-hide-cards-knob"></div>
+                        </button>
+                    </div>
+                </div>
+                
+                <button onclick="closeModal('modal-general-settings')" class="w-full bg-gray-900 dark:bg-white text-white dark:text-black font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-transform tracking-widest uppercase text-[10px] mt-auto">Aceptar</button>
+            </div>
+        </div>
+
         <!-- MODAL CALENDARIO -->
         <div id="modal-datepicker" class="modal-sheet z-[60]">
             <div class="modal-handle-container"><div class="modal-handle"></div></div>
@@ -658,6 +692,17 @@
             <div class="px-6 pb-10 flex flex-col">
                 <h2 class="text-2xl font-black mb-8 text-center tracking-tight">Ajustes</h2>
                 <div class="space-y-4">
+
+                    <button onclick="openGeneralSettings()" class="w-full bg-gray-100 dark:bg-white/5 p-4 rounded-3xl flex justify-between items-center active:scale-95 transition-all">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-gray-300 rounded-xl flex items-center justify-center"><i class="ph-bold ph-sliders-horizontal text-lg"></i></div>
+                            <div class="flex flex-col text-left">
+                                <span class="font-bold text-sm tracking-tight">Ajustes Generales</span>
+                                <span class="text-[9px] opacity-40 font-bold uppercase tracking-widest">Personalizar interfaz</span>
+                            </div>
+                        </div>
+                        <i class="ph-bold ph-caret-right text-gray-400"></i>
+                    </button>
                     
                     <button onclick="openAnalyticsModal()" class="w-full bg-blue-500/5 p-4 rounded-3xl flex justify-between items-center active:scale-95 transition-all">
                         <div class="flex items-center gap-3">
@@ -1046,15 +1091,19 @@
             try {
                 const { data: settingsData } = await supabaseClient.from('user_settings').select('*').eq('user_id', currentUser.id).single();
                 
-                if (settingsData) {
-                    appData.settings = { ...appData.settings, ...(settingsData.settings || {}) };
-                    if (settingsData.cats && Object.keys(settingsData.cats).length > 0) {
-                        appData.cats = settingsData.cats;
-                    }
-                    applyTheme(); // Forzar el tema de la nube apenas llegan los datos
-                } else {
-                    await supabaseClient.from('user_settings').insert({ user_id: currentUser.id, settings: appData.settings, cats: appData.cats });
+                const localSet = JSON.parse(localStorage.getItem('rioluquitas_settings_backup'));
+                const localCats = JSON.parse(localStorage.getItem('rioluquitas_cats_backup'));
+
+                if (settingsData && settingsData.settings) {
+                    appData.settings = { ...appData.settings, ...settingsData.settings };
+                    if (settingsData.cats && Object.keys(settingsData.cats).length > 0) appData.cats = settingsData.cats;
+                } else if (localSet) {
+                    // Si falla la nube pero hay respaldo local
+                    appData.settings = { ...appData.settings, ...localSet };
+                    if (localCats) appData.cats = localCats;
                 }
+                
+                applyTheme(); 
 
                 const { data: recordsData } = await supabaseClient.from('records').select('*').eq('user_id', currentUser.id).order('date', { ascending: false });
                 
@@ -1064,19 +1113,6 @@
                         category: r.category, status: r.status, icon: r.icon, color: r.color, originalDate: r.originaldate,
                         payMethod: r.paymethod, loanId: r.loanid ? parseInt(r.loanid) : null
                     }));
-                } else {
-                    const localData = JSON.parse(localStorage.getItem('finanzas_rioluquitas'));
-                    if (localData && localData.records && localData.records.length > 0) {
-                        showToast('🔄 MIGRANDO TUS DATOS A LA NUBE...');
-                        const dbRecords = localData.records.map(r => mapRecordToDB(r));
-                        await supabaseClient.from('records').insert(dbRecords);
-                        appData.records = localData.records;
-                        if (localData.settings) appData.settings = localData.settings;
-                        if (localData.cats) appData.cats = localData.cats;
-                        await syncSettingsToCloud();
-                        localStorage.removeItem('finanzas_rioluquitas'); 
-                        setTimeout(() => showToast('☁️ TUS DATOS AHORA VIVEN EN LA NUBE'), 2000);
-                    }
                 }
 
                 const { data: pendingData } = await supabaseClient.from('pending_records').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false });
@@ -1106,7 +1142,7 @@
 
             } catch (e) {
                 console.error("Error cargando datos:", e);
-                showToast("ERROR AL CONECTAR CON LA NUBE");
+                showToast("CARGANDO DESDE MEMORIA LOCAL");
             }
         }
 
@@ -1159,18 +1195,22 @@
             window.location.reload(); 
         }
 
-        // FUNCIÓN MEJORADA: Guarda usando Update en vez de Upsert para no fallar jamás
+        // DOBLE MEMORIA (Nube + Local) PARA QUE NUNCA FALLE
         async function syncSettingsToCloud() {
             if (!currentUser) return;
             try {
-                const { data } = await supabaseClient.from('user_settings').select('id').eq('user_id', currentUser.id).maybeSingle();
+                // RESPALDO LOCAL DE EMERGENCIA
+                localStorage.setItem('rioluquitas_settings_backup', JSON.stringify(appData.settings));
+                localStorage.setItem('rioluquitas_cats_backup', JSON.stringify(appData.cats));
+
+                const { data } = await supabaseClient.from('user_settings').select('user_id').eq('user_id', currentUser.id).maybeSingle();
                 if (data) {
                     await supabaseClient.from('user_settings').update({ settings: appData.settings, cats: appData.cats }).eq('user_id', currentUser.id);
                 } else {
                     await supabaseClient.from('user_settings').insert({ user_id: currentUser.id, settings: appData.settings, cats: appData.cats });
                 }
             } catch (e) {
-                console.error("Error guardando settings:", e);
+                console.error("Error guardando en la nube, pero se respaldó localmente.");
             }
         }
 
@@ -1470,7 +1510,7 @@
 
         let appData = { 
             records: [], 
-            settings: { dark: false, apiKey: '', aiVoice: true, aiCamera: true, colorTheme: 'classic', appName: 'Rioluquitas', font: 'sans', privacyMode: false }, 
+            settings: { dark: false, apiKey: '', aiVoice: true, aiCamera: true, colorTheme: 'classic', appName: 'Rioluquitas', font: 'sans', privacyMode: false, hideTotalLoans: false, hideDebitCredit: false }, 
             cats: JSON.parse(JSON.stringify(defaultCats)) 
         };
 
@@ -1479,8 +1519,8 @@
 
         function applyAppName() {
             const titleEl = document.getElementById('app-title');
-            if(titleEl) titleEl.textContent = appData.settings.appName;
-            document.title = appData.settings.appName;
+            if(titleEl) titleEl.textContent = appData.settings.appName || 'Rioluquitas';
+            document.title = appData.settings.appName || 'Rioluquitas';
         }
 
         function saveAppName() {
@@ -1492,6 +1532,41 @@
             applyAppName();
             closeModal('modal-edit-name');
             showToast('NOMBRE ACTUALIZADO');
+        }
+
+        function updateGeneralSettingsUI() {
+            const hlBtn = document.getElementById('set-hide-loans-btn');
+            const hlKnob = hlBtn.querySelector('.set-hide-loans-knob');
+            if (appData.settings.hideTotalLoans) {
+                hlBtn.className = "w-12 h-6 bg-themeGreen rounded-full relative transition-all";
+                hlKnob.className = "absolute top-1 left-7 w-4 h-4 bg-white rounded-full transition-all shadow set-hide-loans-knob";
+            } else {
+                hlBtn.className = "w-12 h-6 bg-gray-300 dark:bg-gray-600 rounded-full relative transition-all";
+                hlKnob.className = "absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-all shadow set-hide-loans-knob";
+            }
+
+            const hcBtn = document.getElementById('set-hide-cards-btn');
+            const hcKnob = hcBtn.querySelector('.set-hide-cards-knob');
+            if (appData.settings.hideDebitCredit) {
+                hcBtn.className = "w-12 h-6 bg-themeGreen rounded-full relative transition-all";
+                hcKnob.className = "absolute top-1 left-7 w-4 h-4 bg-white rounded-full transition-all shadow set-hide-cards-knob";
+            } else {
+                hcBtn.className = "w-12 h-6 bg-gray-300 dark:bg-gray-600 rounded-full relative transition-all";
+                hcKnob.className = "absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-all shadow set-hide-cards-knob";
+            }
+        }
+
+        function toggleGeneralSetting(key) {
+            appData.settings[key] = !appData.settings[key];
+            syncSettingsToCloud();
+            updateGeneralSettingsUI();
+            if (curTab === 'dashboard') navigate('dashboard'); 
+        }
+
+        function openGeneralSettings() {
+            updateGeneralSettingsUI();
+            document.getElementById('modal-general-settings').classList.add('modal-active');
+            document.getElementById('overlay').classList.remove('opacity-0', 'pointer-events-none');
         }
 
         function togglePrivacyMode() {
@@ -2144,15 +2219,6 @@
             renderCustomCatList();
         }
 
-        function deleteCustomCat(idx) {
-            if (appData.cats[ccCurrentTab].length <= 1) {
-                return showToast('DEBES TENER AL MENOS UNA');
-            }
-            appData.cats[ccCurrentTab].splice(idx, 1);
-            syncSettingsToCloud();
-            renderCustomCatList();
-        }
-
         function openAnalyticsModal() {
             try {
                 const mNombre = mNames[curDate.getMonth()];
@@ -2721,7 +2787,7 @@
                             <p class="text-[9px] font-black uppercase opacity-60 tracking-widest mb-1">Balance Mensual</p>
                             <div class="flex items-end justify-between mb-5 w-full">
                                 <h2 class="font-black tracking-tight dark:text-white leading-none truncate w-full pr-2" style="font-size: clamp(24px, 7vw, 30px);">${fmt(sm.b)}</h2>
-                                ${sm.p > 0 && !appData.settings.privacyMode ? `
+                                ${(!appData.settings.hideTotalLoans && sm.p > 0 && !appData.settings.privacyMode) ? `
                                 <div class="flex flex-col text-right pb-0.5 shrink-0">
                                     <span class="text-[7px] font-black uppercase opacity-50 tracking-widest leading-none mb-1">Total + Préstamos</span>
                                     <span class="text-sm font-black opacity-75 leading-none">${fmt(sm.b + sm.p)}</span>
@@ -2742,7 +2808,7 @@
                             <p class="text-[9px] font-black uppercase opacity-60 tracking-widest mb-1">Balance Global</p>
                             <div class="flex items-end justify-between mb-5 w-full">
                                 <h2 class="font-black tracking-tight dark:text-white leading-none truncate w-full pr-2" style="font-size: clamp(24px, 7vw, 30px);">${fmt(sg.b)}</h2>
-                                ${sg.p > 0 && !appData.settings.privacyMode ? `
+                                ${(!appData.settings.hideTotalLoans && sg.p > 0 && !appData.settings.privacyMode) ? `
                                 <div class="flex flex-col text-right pb-0.5 shrink-0">
                                     <span class="text-[7px] font-black uppercase opacity-50 tracking-widest leading-none mb-1">Total + Préstamos</span>
                                     <span class="text-sm font-black opacity-75 leading-none">${fmt(sg.b + sg.p)}</span>
@@ -2762,6 +2828,7 @@
                     </div>
                 </div>
 
+                ${!appData.settings.hideDebitCredit ? `
                 <!-- NUEVAS TARJETAS: DÉBITO Y EFECTIVO (Diseño Slim Horizontal) -->
                 <div class="flex gap-2 mb-6 w-full">
                     <div class="flex-1 bg-iosCard-light dark:bg-iosCard-dark p-2.5 rounded-2xl shadow-sm border border-black/[0.03] dark:border-white/[0.03] flex items-center gap-2 transition-all min-w-0">
@@ -2782,7 +2849,7 @@
                             <span id="dash-efectivo" class="font-black text-gray-900 dark:text-white truncate w-full leading-none transition-all" style="font-size: clamp(10px, 3.2vw, 15px); letter-spacing: -0.5px;">${fmt(viewGlobalBalance ? sg.bEf : sm.bEf)}</span>
                         </div>
                     </div>
-                </div>
+                </div>` : '<div class="mb-4"></div>'}
 
                 <div class="flex justify-between items-center mb-4 px-1">
                     <h3 class="text-[9px] font-black uppercase opacity-40 tracking-widest">Todas las actividades</h3>
