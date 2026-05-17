@@ -1036,7 +1036,7 @@
                     </div>
                 </div>
                 <div class="flex flex-col gap-3 mt-auto">
-                    <button onclick="saveAiResultDirectly()" class="w-full bg-themeGreen text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-transform tracking-widest uppercase text-[10px] flex items-center justify-center gap-2">
+                    <button onclick="saveAiResultDirectly()" id="btn-ai-save" class="w-full bg-themeGreen text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-transform tracking-widest uppercase text-[10px] flex items-center justify-center gap-2">
                         <i class="ph-bold ph-check-circle text-lg"></i>Aceptar y Guardar
                     </button>
                     <div class="flex gap-3">
@@ -1249,7 +1249,7 @@
                     ${p.detail ? `<p class="text-xs font-medium opacity-70 mb-4 bg-gray-100 dark:bg-white/5 p-3 rounded-xl italic break-words border border-black/5 dark:border-white/5">"${p.detail}"</p>` : '<div class="mb-4"></div>'}
                     
                     <div class="flex gap-2">
-                        <button onclick="approvePending(${p.id})" class="flex-1 bg-themeGreen text-white font-black py-3 rounded-xl active:scale-95 transition-transform text-[9px] uppercase tracking-widest flex items-center justify-center gap-1 shadow-md shadow-themeGreen/20"><i class="ph-bold ph-check text-base"></i> Aprobar</button>
+                        <button id="btn-approve-${p.id}" onclick="approvePending(${p.id})" class="flex-1 bg-themeGreen text-white font-black py-3 rounded-xl active:scale-95 transition-transform text-[9px] uppercase tracking-widest flex items-center justify-center gap-1 shadow-md shadow-themeGreen/20"><i class="ph-bold ph-check text-base"></i> Aprobar</button>
                         <button onclick="editPending(${p.id})" class="flex-[0.5] bg-blue-500/10 text-blue-500 font-black py-3 rounded-xl active:scale-95 transition-transform text-[9px] uppercase tracking-widest flex items-center justify-center"><i class="ph-bold ph-pencil-simple text-base"></i></button>
                         <button onclick="deletePending(${p.id})" class="flex-[0.5] bg-red-500/10 text-red-500 font-black py-3 rounded-xl active:scale-95 transition-transform text-[9px] uppercase tracking-widest flex items-center justify-center"><i class="ph-bold ph-trash text-base"></i></button>
                     </div>
@@ -1262,27 +1262,35 @@
             const p = pendingRecordsCache.find(x => x.id === dbId);
             if(!p) return;
 
-            let icon = 'ph-fill ph-circle';
-            let color = 'text-gray-400';
-            const allCats = [...(appData.cats[p.type] || [])];
-            const catObj = allCats.find(c => c.n.toLowerCase() === p.category.toLowerCase());
-            if(catObj) { icon = catObj.i; color = catObj.c; }
+            setBtnLoading(`btn-approve-${dbId}`, true);
 
-            const newRec = {
-                id: Date.now(), type: p.type, amount: p.amount, date: p.date, payDate: null, 
-                detail: p.detail, category: catObj ? catObj.n : p.category, status: p.type === 'prestamo' ? 'pending' : 'done',
-                icon: icon, color: color, originalDate: p.date, payMethod: 'debito', loanId: null
-            };
+            try {
+                let icon = 'ph-fill ph-circle';
+                let color = 'text-gray-400';
+                const allCats = [...(appData.cats[p.type] || [])];
+                const catObj = allCats.find(c => c.n.toLowerCase() === p.category.toLowerCase());
+                if(catObj) { icon = catObj.i; color = catObj.c; }
 
-            pendingRecordsCache = pendingRecordsCache.filter(x => x.id !== dbId);
-            renderPendingRecords();
-            appData.records.push(newRec);
-            recalculateAbonos();
-            navigate('dashboard');
-            showToast('✅ APROBADO Y GUARDADO');
+                const newRec = {
+                    id: Date.now(), type: p.type, amount: p.amount, date: p.date, payDate: null, 
+                    detail: p.detail, category: catObj ? catObj.n : p.category, status: p.type === 'prestamo' ? 'pending' : 'done',
+                    icon: icon, color: color, originalDate: p.date, payMethod: 'debito', loanId: null
+                };
 
-            await supabaseClient.from('pending_records').delete().eq('id', dbId);
-            await supabaseClient.from('records').insert([mapRecordToDB(newRec)]);
+                await supabaseClient.from('pending_records').delete().eq('id', dbId);
+                await supabaseClient.from('records').insert([mapRecordToDB(newRec)]);
+
+                pendingRecordsCache = pendingRecordsCache.filter(x => x.id !== dbId);
+                renderPendingRecords();
+                appData.records.push(newRec);
+                recalculateAbonos();
+                navigate('dashboard');
+                showToast('✅ APROBADO Y GUARDADO');
+            } catch (err) {
+                console.error(err);
+                setBtnLoading(`btn-approve-${dbId}`, false);
+                showToast('ERROR AL APROBAR');
+            }
         }
 
         async function deletePending(dbId) {
@@ -1833,42 +1841,51 @@
         async function saveAiResultDirectly() {
             if(!tempAiResult) return;
 
-            const tipoT = tempAiResult.tipo; 
-            const amount = tempAiResult.monto;
-            const detail = tempAiResult.detalle || '';
-            const category = tempAiResult.categoria || 'Otros';
-            
-            const inputDateVal = document.getElementById('in-date').value;
-            const date = inputDateVal ? inputDateVal : new Date().toISOString().split('T')[0];
+            setBtnLoading('btn-ai-save', true);
 
-            let icon = 'ph-fill ph-circle';
-            let color = 'text-gray-400';
-            let finalCategoryName = category;
+            try {
+                const tipoT = tempAiResult.tipo; 
+                const amount = tempAiResult.monto;
+                const detail = tempAiResult.detalle || '';
+                const category = tempAiResult.categoria || 'Otros';
+                
+                const inputDateVal = document.getElementById('in-date').value;
+                const date = inputDateVal ? inputDateVal : new Date().toISOString().split('T')[0];
 
-            if (tipoT !== 'prestamo') {
-                const allCats = [...(appData.cats[tipoT] || [])];
-                const catObj = allCats.find(c => c.n.toLowerCase() === category.toLowerCase());
-                if(catObj) {
-                    icon = catObj.i;
-                    color = catObj.c;
-                    finalCategoryName = catObj.n;
+                let icon = 'ph-fill ph-circle';
+                let color = 'text-gray-400';
+                let finalCategoryName = category;
+
+                if (tipoT !== 'prestamo') {
+                    const allCats = [...(appData.cats[tipoT] || [])];
+                    const catObj = allCats.find(c => c.n.toLowerCase() === category.toLowerCase());
+                    if(catObj) {
+                        icon = catObj.i;
+                        color = catObj.c;
+                        finalCategoryName = catObj.n;
+                    }
                 }
+
+                const newRec = {
+                    id: Date.now(), type: tipoT, amount: amount, date: date, payDate: '', 
+                    detail: detail, category: finalCategoryName, status: tipoT === 'prestamo' ? 'pending' : 'done',
+                    icon: icon, color: color, originalDate: date, payMethod: 'debito'
+                };
+
+                appData.records.push(newRec);
+                await supabaseClient.from('records').insert([mapRecordToDB(newRec)]);
+
+                recalculateAbonos();
+                closeAllModals();
+                navigate(tipoT + 's'); 
+                showToast('GUARDADO CON ÉXITO');
+                tempAiResult = null;
+            } catch (err) {
+                console.error(err);
+                showToast('ERROR AL GUARDAR');
+            } finally {
+                setBtnLoading('btn-ai-save', false);
             }
-
-            const newRec = {
-                id: Date.now(), type: tipoT, amount: amount, date: date, payDate: '', 
-                detail: detail, category: finalCategoryName, status: tipoT === 'prestamo' ? 'pending' : 'done',
-                icon: icon, color: color, originalDate: date, payMethod: 'debito'
-            };
-
-            appData.records.push(newRec);
-            recalculateAbonos();
-            closeAllModals();
-            navigate(tipoT + 's'); 
-            showToast('GUARDADO CON ÉXITO');
-            tempAiResult = null;
-
-            await supabaseClient.from('records').insert([mapRecordToDB(newRec)]);
         }
 
         function applyAiResult() {
@@ -1948,6 +1965,24 @@
         let curPayMethod = 'debito';
 
         const mNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+
+        function setBtnLoading(btnId, isLoading) {
+            const btn = document.getElementById(btnId);
+            if (!btn) return;
+            if (isLoading) {
+                btn.dataset.originalHtml = btn.innerHTML;
+                btn.disabled = true;
+                btn.classList.add('pointer-events-none', 'opacity-80', 'scale-[0.98]');
+                btn.innerHTML = `<div class="flex items-center justify-center gap-2">
+                                    <div class="w-4 h-4 border-[3px] border-white/20 border-t-white rounded-full animate-spin"></div>
+                                    <span class="tracking-widest uppercase text-[10px]">Guardando...</span>
+                                 </div>`;
+            } else {
+                btn.disabled = false;
+                btn.classList.remove('pointer-events-none', 'opacity-80', 'scale-[0.98]');
+                if (btn.dataset.originalHtml) btn.innerHTML = btn.dataset.originalHtml;
+            }
+        }
 
         let ccCurrentTab = 'gasto';
         let ccSelectedIcon = 'ph-fill ph-star';
@@ -3105,36 +3140,46 @@
             const remaining = r.amount - (r.paidAmount || 0);
             const actualAbono = Math.min(abonoRaw, remaining);
 
-            const newRec = {
-                id: Date.now(),
-                loanId: r.id, 
-                type: 'ingreso',
-                amount: actualAbono,
-                date: new Date().toISOString().split('T')[0], 
-                detail: `Abono de préstamo`,
-                category: `Cobro: ${r.category}`,
-                status: 'done',
-                icon: 'ph-fill ph-handshake',
-                color: 'text-themeGreen',
-                originalDate: new Date().toISOString().split('T')[0],
-                payMethod: curAbonoPayMethod
-            };
+            setBtnLoading('btn-submit-abono', true);
 
-            appData.records.push(newRec);
+            try {
+                const newRec = {
+                    id: Date.now(),
+                    loanId: r.id, 
+                    type: 'ingreso',
+                    amount: actualAbono,
+                    date: new Date().toISOString().split('T')[0], 
+                    detail: `Abono de préstamo`,
+                    category: `Cobro: ${r.category}`,
+                    status: 'done',
+                    icon: 'ph-fill ph-handshake',
+                    color: 'text-themeGreen',
+                    originalDate: new Date().toISOString().split('T')[0],
+                    payMethod: curAbonoPayMethod
+                };
 
-            const btn = document.getElementById('btn-submit-abono');
-            btn.innerHTML = `<i class="ph-bold ph-check text-2xl"></i>`;
-            btn.classList.add('bounce-check');
-            
-            setTimeout(() => {
-                btn.classList.remove('bounce-check');
-                recalculateAbonos(); 
-                closeModal('modal-abono');
-                navigate('prestamos');
-                showToast(actualAbono === remaining ? 'PRÉSTAMO PAGADO' : `ABONO EN ${curAbonoPayMethod.toUpperCase()}`);
-            }, 500);
+                appData.records.push(newRec);
 
-            await supabaseClient.from('records').insert([mapRecordToDB(newRec)]);
+                await supabaseClient.from('records').insert([mapRecordToDB(newRec)]);
+
+                const btn = document.getElementById('btn-submit-abono');
+                setBtnLoading('btn-submit-abono', false);
+                btn.innerHTML = `<i class="ph-bold ph-check text-2xl"></i>`;
+                btn.classList.add('bounce-check');
+                
+                setTimeout(() => {
+                    btn.classList.remove('bounce-check');
+                    recalculateAbonos(); 
+                    closeModal('modal-abono');
+                    navigate('prestamos');
+                    showToast(actualAbono === remaining ? 'PRÉSTAMO PAGADO' : `ABONO EN ${curAbonoPayMethod.toUpperCase()}`);
+                }, 500);
+
+            } catch (err) {
+                console.error(err);
+                setBtnLoading('btn-submit-abono', false);
+                showToast('ERROR AL GUARDAR ABONO');
+            }
         }
 
         function cobrarTodo(id) {
@@ -3494,40 +3539,49 @@
             
             if(!category || isNaN(amount)) return showToast('COMPLETAR DATOS');
 
-            const allCats = [...(appData.cats.gasto || []), ...(appData.cats.ingreso || [])];
-            const catObj = allCats.find(c => c.n === category);
-            const icon = catObj ? catObj.i : 'ph-fill ph-circle';
-            const color = catObj ? catObj.c : 'text-gray-400';
+            setBtnLoading('btn-submit-form', true);
 
-            if (editingId) {
-                const idx = appData.records.findIndex(r => r.id === editingId);
-                if(idx !== -1) {
-                    appData.records[idx] = { ...appData.records[idx], type: curFormMode, amount, date, payDate, detail, category, icon, color, originalDate: date, payMethod };
-                    await supabaseClient.from('records').update(mapRecordToDB(appData.records[idx])).eq('id', editingId);
+            try {
+                const allCats = [...(appData.cats.gasto || []), ...(appData.cats.ingreso || [])];
+                const catObj = allCats.find(c => c.n === category);
+                const icon = catObj ? catObj.i : 'ph-fill ph-circle';
+                const color = catObj ? catObj.c : 'text-gray-400';
+
+                if (editingId) {
+                    const idx = appData.records.findIndex(r => r.id === editingId);
+                    if(idx !== -1) {
+                        appData.records[idx] = { ...appData.records[idx], type: curFormMode, amount, date, payDate, detail, category, icon, color, originalDate: date, payMethod };
+                        await supabaseClient.from('records').update(mapRecordToDB(appData.records[idx])).eq('id', editingId);
+                    }
+                    showToast('ACTUALIZADO');
+                } else {
+                    const newRec = { id: Date.now(), type: curFormMode, amount, date, payDate, detail, category, status: curFormMode === 'prestamo' ? 'pending' : 'done', icon, color, originalDate: date, payMethod };
+                    appData.records.push(newRec);
+                    await supabaseClient.from('records').insert([mapRecordToDB(newRec)]);
+                    showToast('GUARDADO');
                 }
-                showToast('ACTUALIZADO');
-            } else {
-                const newRec = { id: Date.now(), type: curFormMode, amount, date, payDate, detail, category, status: curFormMode === 'prestamo' ? 'pending' : 'done', icon, color, originalDate: date, payMethod };
-                appData.records.push(newRec);
-                await supabaseClient.from('records').insert([mapRecordToDB(newRec)]);
-                showToast('GUARDADO');
+                
+                recalculateAbonos(); 
+                closeAllModals(window.returnToInbox); // Si volvemos, mantenemos el fondo oscuro
+                
+                // LA MAGIA: ¿Volvemos a la bandeja o nos vamos al inicio?
+                if (window.returnToInbox && pendingRecordsCache.length > 0) {
+                    setTimeout(() => {
+                        renderPendingRecords(); // Re-dibuja para mostrar los que quedan
+                        document.getElementById('modal-ai-inbox').classList.add('modal-active');
+                    }, 400);
+                } else {
+                    if(window.returnToInbox) { showToast('BANDEJA LIMPIA 🎉'); document.getElementById('overlay').classList.add('opacity-0', 'pointer-events-none'); }
+                    navigate(curFormMode + 's');
+                }
+                
+                window.returnToInbox = false; // Apagamos el truco
+            } catch (err) {
+                console.error(err);
+                showToast('ERROR AL GUARDAR');
+            } finally {
+                setBtnLoading('btn-submit-form', false);
             }
-            
-            recalculateAbonos(); 
-            closeAllModals(window.returnToInbox); // Si volvemos, mantenemos el fondo oscuro
-            
-            // LA MAGIA: ¿Volvemos a la bandeja o nos vamos al inicio?
-            if (window.returnToInbox && pendingRecordsCache.length > 0) {
-                setTimeout(() => {
-                    renderPendingRecords(); // Re-dibuja para mostrar los que quedan
-                    document.getElementById('modal-ai-inbox').classList.add('modal-active');
-                }, 400);
-            } else {
-                if(window.returnToInbox) { showToast('BANDEJA LIMPIA 🎉'); document.getElementById('overlay').classList.add('opacity-0', 'pointer-events-none'); }
-                navigate(curFormMode + 's');
-            }
-            
-            window.returnToInbox = false; // Apagamos el truco
         };
 
         function toggleDarkMode() { appData.settings.dark = !appData.settings.dark; applyTheme(); syncSettingsToCloud(); }
