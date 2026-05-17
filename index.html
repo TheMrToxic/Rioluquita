@@ -1214,6 +1214,7 @@
 
             editingId = null; // No estamos editando un record existente, estamos editando un pendiente para CREARLO.
             setFormMode(p.type, p.category);
+            setPayMethod('debito');
             document.getElementById('in-amount-raw').value = p.amount;
             document.getElementById('in-amount-formatted').value = '$ ' + new Intl.NumberFormat('es-CL').format(p.amount);
             document.getElementById('in-detail').value = p.detail || '';
@@ -1608,7 +1609,7 @@
 
         async function sendToGeminiUnified(base64Data, voiceText) {
             const apiKey = appData.settings.apiKey;
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKey}`;
             
             const catsGasto = appData.cats.gasto.map(c => c.n).join(', ');
             const catsIngreso = appData.cats.ingreso.map(c => c.n).join(', ');
@@ -1754,6 +1755,7 @@
             if(!tempAiResult) return;
             
             setFormMode(tempAiResult.tipo, tempAiResult.categoria);
+            setPayMethod('debito');
             
             document.getElementById('in-amount-raw').value = tempAiResult.monto;
             document.getElementById('in-amount-formatted').value = '$ ' + new Intl.NumberFormat('es-CL').format(tempAiResult.monto);
@@ -3148,6 +3150,7 @@
                 catBox.classList.remove('hidden'); pField.classList.add('hidden'); payBox.classList.add('hidden'); detailBox.classList.remove('hidden'); pmBox.classList.remove('hidden');
                 
                 const combinedCats = appData.cats[mode] || [];
+                let catFound = false;
                 
                 combinedCats.forEach((c, idx) => {
                     const b = document.createElement('button'); b.type = 'button';
@@ -3158,8 +3161,14 @@
                     };
                     b.innerHTML = `<i class="${c.i} text-2xl ${c.c}"></i><span class="text-[7px] font-black uppercase text-center">${c.n}</span>`;
                     grid.appendChild(b);
-                    if (preselectCat && c.n === preselectCat) b.click(); else if (!preselectCat && idx === 0) b.click();
+                    if (preselectCat && c.n.toLowerCase() === preselectCat.toLowerCase().trim()) {
+                        b.click();
+                        catFound = true;
+                    }
                 });
+                if (!catFound && grid.firstChild) {
+                    grid.firstChild.click();
+                }
             }
         }
 
