@@ -536,10 +536,24 @@
         <!-- MODAL ABONAR PRÉSTAMO -->
         <div id="modal-abono" class="modal-sheet z-[60]">
             <div class="modal-handle-container"><div class="modal-handle"></div></div>
-            <div class="px-6 pb-10 flex flex-col gap-6">
+            <div class="px-6 pb-10 flex flex-col gap-4">
                 <h3 class="text-2xl font-black tracking-tight text-center">Registrar Pago</h3>
-                <p class="text-center text-sm font-black text-themeGreen dark:text-themeGreen-light tracking-tight" id="abono-subtitle">Faltan $0</p>
+                <p class="text-center text-sm font-black text-themeGreen dark:text-themeGreen-light tracking-tight mb-2" id="abono-subtitle">Faltan $0</p>
                 
+                <div>
+                    <label class="text-[9px] font-black uppercase opacity-40 ml-1 tracking-widest">Método de pago</label>
+                    <div id="abono-pm-box" class="flex gap-2 mt-1.5 mb-4">
+                        <button type="button" onclick="setAbonoPayMethod('debito')" id="btn-abono-pm-debito" class="flex-1 py-3 bg-themeGreen/10 text-themeGreen dark:bg-themeGreen/20 dark:text-themeGreen-light rounded-xl flex items-center justify-center gap-2 transition-all border-2 border-themeGreen/50">
+                            <i class="ph-fill ph-credit-card text-lg"></i>
+                            <span class="text-[10px] font-black uppercase tracking-widest">Débito</span>
+                        </button>
+                        <button type="button" onclick="setAbonoPayMethod('efectivo')" id="btn-abono-pm-efectivo" class="flex-1 py-3 bg-gray-200/50 dark:bg-white/5 text-gray-500 dark:text-gray-400 rounded-xl flex items-center justify-center gap-2 transition-all border-2 border-transparent">
+                            <i class="ph-fill ph-money text-lg"></i>
+                            <span class="text-[10px] font-black uppercase tracking-widest">Efectivo</span>
+                        </button>
+                    </div>
+                </div>
+
                 <div>
                     <label class="text-[9px] font-black uppercase opacity-40 ml-1 tracking-widest">Monto a abonar</label>
                     <div class="ios-input-full mt-1.5">
@@ -551,6 +565,30 @@
                 <button type="button" id="btn-submit-abono" onclick="processAbono()" class="mt-auto w-full bg-themeGreen text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-transform tracking-widest uppercase text-[10px] flex items-center justify-center gap-2">
                     <span id="abono-btn-text">Guardar Abono</span>
                 </button>
+            </div>
+        </div>
+
+        <!-- MODAL COBRO RÁPIDO Y MONITO -->
+        <div id="modal-cobro-quick" class="modal-sheet z-[65]">
+            <div class="modal-handle-container"><div class="modal-handle"></div></div>
+            <div class="px-6 pb-10 flex flex-col items-center text-center">
+                <div class="w-20 h-20 bg-themeGreen/10 text-themeGreen dark:bg-themeGreen/20 dark:text-themeGreen-light rounded-full flex items-center justify-center mb-6">
+                    <i class="ph-fill ph-hand-coins text-5xl"></i>
+                </div>
+                <h3 class="text-2xl font-black tracking-tight mb-2">¡Dinero Recuperado!</h3>
+                <p class="text-sm font-medium opacity-60 mb-8 px-4">¿De qué forma te devolvieron los <span id="cobro-quick-amount" class="font-black text-gray-900 dark:text-white"></span>?</p>
+                
+                <div class="flex gap-3 w-full mb-4">
+                    <button onclick="executeCobroQuick('debito')" class="flex-1 bg-gray-100 dark:bg-white/5 border border-black/5 dark:border-white/5 py-5 rounded-3xl flex flex-col items-center gap-3 active:scale-95 transition-all text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-themeGreen">
+                        <i class="ph-fill ph-credit-card text-3xl"></i>
+                        <span class="text-[10px] font-black uppercase tracking-widest">A mi Cuenta</span>
+                    </button>
+                    <button onclick="executeCobroQuick('efectivo')" class="flex-1 bg-gray-100 dark:bg-white/5 border border-black/5 dark:border-white/5 py-5 rounded-3xl flex flex-col items-center gap-3 active:scale-95 transition-all text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-themeGreen">
+                        <i class="ph-fill ph-money text-3xl"></i>
+                        <span class="text-[10px] font-black uppercase tracking-widest">En Efectivo</span>
+                    </button>
+                </div>
+                <button onclick="closeModal('modal-cobro-quick')" class="w-full py-4 mt-2 font-black text-[10px] uppercase tracking-widest opacity-40">Cancelar</button>
             </div>
         </div>
 
@@ -1013,6 +1051,7 @@
                     if (settingsData.cats && Object.keys(settingsData.cats).length > 0) {
                         appData.cats = settingsData.cats;
                     }
+                    applyTheme(); // Forzar el tema de la nube apenas llegan los datos
                 } else {
                     await supabaseClient.from('user_settings').insert({ user_id: currentUser.id, settings: appData.settings, cats: appData.cats });
                 }
@@ -1047,13 +1086,10 @@
                 
                 if (pendingData && pendingData.length > 0) {
                     // 🛡️ ESCUDO PROTECTOR AUTOMÁTICO (Client-Side Failsafe)
-                    // Si por algún error de Make.com se coló un registro con categoría "Ignorar",
-                    // lo detectamos, lo borramos de Supabase en silencio y no lo mostramos en pantalla.
                     const ignorarRecords = pendingData.filter(p => p.category && p.category.toLowerCase().trim() === 'ignorar');
                     if (ignorarRecords.length > 0) {
                         const ignorarIds = ignorarRecords.map(p => p.id);
                         await supabaseClient.from('pending_records').delete().in('id', ignorarIds);
-                        console.log("🛡️ Rioluquitas Shield: Se auto-eliminaron duplicados ignorados de Supabase:", ignorarIds);
                     }
 
                     // Guardamos solo los válidos en la caché
@@ -1123,9 +1159,19 @@
             window.location.reload(); 
         }
 
+        // FUNCIÓN MEJORADA: Guarda usando Update en vez de Upsert para no fallar jamás
         async function syncSettingsToCloud() {
             if (!currentUser) return;
-            await supabaseClient.from('user_settings').upsert({ user_id: currentUser.id, settings: appData.settings, cats: appData.cats });
+            try {
+                const { data } = await supabaseClient.from('user_settings').select('id').eq('user_id', currentUser.id).maybeSingle();
+                if (data) {
+                    await supabaseClient.from('user_settings').update({ settings: appData.settings, cats: appData.cats }).eq('user_id', currentUser.id);
+                } else {
+                    await supabaseClient.from('user_settings').insert({ user_id: currentUser.id, settings: appData.settings, cats: appData.cats });
+                }
+            } catch (e) {
+                console.error("Error guardando settings:", e);
+            }
         }
 
         function mapRecordToDB(r) {
@@ -1212,7 +1258,7 @@
             
             closeModal('modal-ai-inbox');
 
-            editingId = null; // No estamos editando un record existente, estamos editando un pendiente para CREARLO.
+            editingId = null; 
             setFormMode(p.type, p.category);
             setPayMethod('debito');
             document.getElementById('in-amount-raw').value = p.amount;
@@ -1224,10 +1270,9 @@
             const [y, m, d] = dateToUse.split('-'); 
             document.getElementById('display-date').textContent = `${parseInt(d)} ${mNames[parseInt(m)-1].substring(0,3)}`;
 
-            // Borramos de pendientes optimísticamente para que no se duplique al guardar
             deletePending(dbId);
 
-            window.returnToInbox = true; // El truco para que la app sepa que debe volver atrás
+            window.returnToInbox = true;
             document.getElementById('btn-submit-form').textContent = 'Guardar Corregido';
             
             setTimeout(() => {
@@ -1609,7 +1654,7 @@
 
         async function sendToGeminiUnified(base64Data, voiceText) {
             const apiKey = appData.settings.apiKey;
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKey}`;
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
             
             const catsGasto = appData.cats.gasto.map(c => c.n).join(', ');
             const catsIngreso = appData.cats.ingreso.map(c => c.n).join(', ');
@@ -1972,6 +2017,18 @@
             curPayMethod = method;
             const bD = document.getElementById('btn-pm-debito');
             const bE = document.getElementById('btn-pm-efectivo');
+            
+            bD.className = method === 'debito' ? "flex-1 py-3 bg-themeGreen/10 text-themeGreen dark:bg-themeGreen/20 dark:text-themeGreen-light rounded-xl flex items-center justify-center gap-2 transition-all border-2 border-themeGreen/50" : "flex-1 py-3 bg-gray-200/50 dark:bg-white/5 text-gray-500 dark:text-gray-400 rounded-xl flex items-center justify-center gap-2 transition-all border-2 border-transparent";
+            
+            bE.className = method === 'efectivo' ? "flex-1 py-3 bg-themeGreen/10 text-themeGreen dark:bg-themeGreen/20 dark:text-themeGreen-light rounded-xl flex items-center justify-center gap-2 transition-all border-2 border-themeGreen/50" : "flex-1 py-3 bg-gray-200/50 dark:bg-white/5 text-gray-500 dark:text-gray-400 rounded-xl flex items-center justify-center gap-2 transition-all border-2 border-transparent";
+        }
+
+        let curAbonoPayMethod = 'debito';
+
+        function setAbonoPayMethod(method) {
+            curAbonoPayMethod = method;
+            const bD = document.getElementById('btn-abono-pm-debito');
+            const bE = document.getElementById('btn-abono-pm-efectivo');
             
             bD.className = method === 'debito' ? "flex-1 py-3 bg-themeGreen/10 text-themeGreen dark:bg-themeGreen/20 dark:text-themeGreen-light rounded-xl flex items-center justify-center gap-2 transition-all border-2 border-themeGreen/50" : "flex-1 py-3 bg-gray-200/50 dark:bg-white/5 text-gray-500 dark:text-gray-400 rounded-xl flex items-center justify-center gap-2 transition-all border-2 border-transparent";
             
@@ -2547,8 +2604,12 @@
                 const dashData = getDashboardRecords();
                 renderDashboard(main, statsMonth, statsGlobal, dashData);
             }
-            else if (id === 'prestamos') renderLoans(main, listMonth);
-            else renderList(main, id, listMonth);
+            else if (id === 'prestamos') {
+                renderLoans(main, listMonth);
+            }
+            else {
+                renderList(main, id, listMonth);
+            }
             
             updateHeader();
             attachPressEvents();
@@ -2882,7 +2943,7 @@
                             </div>
                             ${r.status === 'pending' ? `
                             <div class="flex gap-2">
-                                <button onclick="cobrarTodo(${r.id})" id="btn-cobrar-todo-${id}" class="ignore-press flex-1 py-3.5 bg-themeGreen text-white rounded-xl font-black text-[9px] uppercase tracking-widest shadow-sm transition-all flex items-center justify-center gap-2">COBRAR TODO</button>
+                                <button onclick="cobrarTodo(${r.id})" id="btn-cobrar-todo-${r.id}" class="ignore-press flex-1 py-3.5 bg-themeGreen text-white rounded-xl font-black text-[9px] uppercase tracking-widest shadow-sm transition-all flex items-center justify-center gap-2">COBRAR TODO</button>
                                 <button onclick="openAbonoModal(${r.id})" class="ignore-press flex-[0.7] py-3.5 bg-themeGreen/10 text-themeGreen dark:bg-themeGreen/20 dark:text-themeGreen-light rounded-xl font-black text-[9px] uppercase tracking-widest shadow-sm transition-all">ABONAR</button>
                             </div>` : ''}
                         </div>`}).join('') || `
@@ -2959,6 +3020,8 @@
             document.getElementById('abono-amount-formatted').value = '';
             document.getElementById('abono-amount-raw').value = '';
             
+            setAbonoPayMethod('debito'); 
+            
             const btn = document.getElementById('btn-submit-abono');
             btn.innerHTML = `<span id="abono-btn-text">Guardar Abono</span>`;
             
@@ -2987,7 +3050,7 @@
                 icon: 'ph-fill ph-handshake',
                 color: 'text-themeGreen',
                 originalDate: new Date().toISOString().split('T')[0],
-                payMethod: 'debito'
+                payMethod: curAbonoPayMethod
             };
 
             appData.records.push(newRec);
@@ -3001,19 +3064,28 @@
                 recalculateAbonos(); 
                 closeModal('modal-abono');
                 navigate('prestamos');
-                showToast(actualAbono === remaining ? 'PRÉSTAMO PAGADO' : 'ABONO GUARDADO');
+                showToast(actualAbono === remaining ? 'PRÉSTAMO PAGADO' : `ABONO EN ${curAbonoPayMethod.toUpperCase()}`);
             }, 500);
 
             await supabaseClient.from('records').insert([mapRecordToDB(newRec)]);
         }
 
-        async function cobrarTodo(id) {
-            const btn = document.getElementById(`btn-cobrar-todo-${id}`);
-            btn.innerHTML = `<i class="ph-bold ph-check text-xl"></i>`;
-            btn.classList.add('bounce-check');
+        function cobrarTodo(id) {
+            currentAbonoLoanId = id;
+            const r = appData.records.find(x => x.id === id);
+            const remaining = r.amount - (r.paidAmount || 0);
+            
+            document.getElementById('cobro-quick-amount').textContent = fmt(remaining);
+            
+            document.getElementById('modal-cobro-quick').classList.add('modal-active');
+            document.getElementById('overlay').classList.remove('opacity-0', 'pointer-events-none');
+        }
+
+        async function executeCobroQuick(method) {
+            closeModal('modal-cobro-quick');
             
             setTimeout(async () => {
-                const r = appData.records.find(x => x.id === id);
+                const r = appData.records.find(x => x.id === currentAbonoLoanId);
                 const remaining = r.amount - (r.paidAmount || 0);
                 
                 const newRec = {
@@ -3028,16 +3100,16 @@
                     icon: 'ph-fill ph-handshake',
                     color: 'text-themeGreen',
                     originalDate: new Date().toISOString().split('T')[0],
-                    payMethod: 'debito'
+                    payMethod: method
                 };
                 
                 appData.records.push(newRec);
                 recalculateAbonos();
                 navigate('prestamos');
-                showToast('COBRADO');
+                showToast(`COBRADO EN ${method.toUpperCase()}`);
 
                 await supabaseClient.from('records').insert([mapRecordToDB(newRec)]);
-            }, 500);
+            }, 300);
         }
 
         function closeModal(id) {
@@ -3145,7 +3217,7 @@
 
             grid.innerHTML = '';
             if(mode === 'prestamo') { 
-                catBox.classList.add('hidden'); pField.classList.remove('hidden'); payBox.classList.remove('hidden'); detailBox.classList.add('hidden'); pmBox.classList.add('hidden');
+                catBox.classList.add('hidden'); pField.classList.remove('hidden'); payBox.classList.remove('hidden'); detailBox.classList.add('hidden'); pmBox.classList.remove('hidden');
             } else {
                 catBox.classList.remove('hidden'); pField.classList.add('hidden'); payBox.classList.add('hidden'); detailBox.classList.remove('hidden'); pmBox.classList.remove('hidden');
                 
@@ -3351,7 +3423,7 @@
             const payDate = document.getElementById('in-pay-date').value;
             const detail = document.getElementById('in-detail').value;
             const category = curFormMode === 'prestamo' ? document.getElementById('in-person').value : curSelCat;
-            const payMethod = (curFormMode === 'ingreso' || curFormMode === 'gasto') ? curPayMethod : 'debito';
+            const payMethod = (curFormMode === 'ingreso' || curFormMode === 'gasto' || curFormMode === 'prestamo') ? curPayMethod : 'debito';
             
             if(!category || isNaN(amount)) return showToast('COMPLETAR DATOS');
 
